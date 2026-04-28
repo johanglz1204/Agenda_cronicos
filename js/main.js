@@ -5,12 +5,13 @@ import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, serve
 // --- CONFIGURACIÓN DE FIREBASE ---
 // TODO: Reemplaza esto con tus propias llaves de Firebase Console
 const firebaseConfig = {
-    apiKey: "TU_API_KEY",
-    authDomain: "TU_PROJECT_ID.firebaseapp.com",
-    projectId: "TU_PROJECT_ID",
-    storageBucket: "TU_PROJECT_ID.appspot.com",
-    messagingSenderId: "TU_SENDER_ID",
-    appId: "TU_APP_ID"
+    apiKey: "AIzaSyDVA_N6L1Fm2A07gKzGqQOd0obeVXOssOw",
+    authDomain: "agenda-farmacia-8d24b.firebaseapp.com",
+    projectId: "agenda-farmacia-8d24b",
+    storageBucket: "agenda-farmacia-8d24b.firebasestorage.app",
+    messagingSenderId: "117482842350",
+    appId: "1:117482842350:web:1c0d6e68be2b927dbe2bff",
+    measurementId: "G-FYQEPSLEHV"
 };
 
 // Initialize Firebase
