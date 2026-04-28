@@ -61,14 +61,19 @@ document.addEventListener('DOMContentLoaded', () => {
             today.setHours(0,0,0,0);
             const todayISO = today.toISOString().split('T')[0];
 
-            // Traer todos los pacientes con tratamientos activos
-            const q = query(collection(db, "treatments"), where("active", "==", true), orderBy("next_contact_date", "asc"));
-            const querySnapshot = await getDocs(q);
+            // Traemos todos los tratamientos (más simple y evita errores de índices)
+            const querySnapshot = await getDocs(collection(db, "treatments"));
             
             let agendaData = [];
             querySnapshot.forEach((doc) => {
-                agendaData.push(doc.data());
+                const data = doc.data();
+                if (data.active === true) {
+                    agendaData.push(data);
+                }
             });
+
+            // Ordenamos por fecha de contacto en JavaScript
+            agendaData.sort((a, b) => a.next_contact_date.localeCompare(b.next_contact_date));
 
             renderAgenda(agendaData, todayISO);
             pendingCount.innerText = agendaData.filter(i => i.next_contact_date <= todayISO).length;
