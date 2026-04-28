@@ -118,6 +118,18 @@ document.addEventListener('DOMContentLoaded', () => {
         loadAgenda(); // Cargar agenda al entrar
     }
 
+    // --- Logout Logic ---
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) {
+        btnLogout.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
+                sessionStorage.clear();
+                window.location.reload(); 
+            }
+        });
+    }
+
     // --- Navigation ---
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
