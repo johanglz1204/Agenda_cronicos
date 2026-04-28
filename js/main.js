@@ -219,7 +219,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const statusClass = item.next_contact_date <= todayISO ? 'today' : 'soon';
             const statusText = daysLeft <= 0 ? 'AGOTADO HOY' : `Faltan ${daysLeft} días`;
 
-            const message = `\u00A1Hola ${item.full_name}! \uD83D\uDC4B\uD83D\uDE0A\nLe escribimos de *Farmacias Madero* \uD83C\uDFE5 para recordarle el resurtido de su medicamento: *${item.medication_name}* \uD83D\uDC8A.\n\n\u00BFDesea que se lo apartemos o se lo enviemos a domicilio? \uD83D\uDEF5\u2728`;
+            const emojiWave = String.fromCodePoint(0x1F44B);
+            const emojiSmile = String.fromCodePoint(0x1F60A);
+            const emojiHospital = String.fromCodePoint(0x1F3E5);
+            const emojiPill = String.fromCodePoint(0x1F48A);
+            const emojiMotorcycle = String.fromCodePoint(0x1F6F5);
+            const emojiSparkles = String.fromCodePoint(0x2728);
+
+            const message = `¡Hola ${item.full_name}! ${emojiWave}${emojiSmile}\nLe escribimos de *Farmacias Madero* ${emojiHospital} para recordarle el resurtido de su medicamento: *${item.medication_name}* ${emojiPill}.\n\n¿Desea que se lo apartemos o se lo enviemos a domicilio? ${emojiMotorcycle}${emojiSparkles}`;
 
             return `
                 <div class="agenda-card">
