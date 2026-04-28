@@ -72,8 +72,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // Ordenamos por fecha de contacto en JavaScript
-            agendaData.sort((a, b) => a.next_contact_date.localeCompare(b.next_contact_date));
+            // Ordenamos por fecha de contacto en JavaScript (con protección por si algún campo está vacío)
+            agendaData.sort((a, b) => {
+                const dateA = a.next_contact_date || "";
+                const dateB = b.next_contact_date || "";
+                return dateA.localeCompare(dateB);
+            });
 
             renderAgenda(agendaData, todayISO);
             pendingCount.innerText = agendaData.filter(i => i.next_contact_date <= todayISO).length;
