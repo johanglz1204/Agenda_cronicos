@@ -185,6 +185,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const statusClass = item.next_contact_date <= todayISO ? 'today' : 'soon';
             const statusText = daysLeft <= 0 ? 'AGOTADO HOY' : `Faltan ${daysLeft} días`;
 
+            const message = `Hola ${item.full_name} 😊\nLe escribimos de Farmacias Madero para recordarle el resurtido de ${item.medication_name}.\n¿Desea que se lo apartemos o que se lo enviemos a domicilio?`;
+
             return `
                 <div class="agenda-card">
                     <div class="card-header">
@@ -197,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p><i class="fas fa-phone"></i> ${item.phone}</p>
                     </div>
                     <div class="card-actions">
-                        <a href="https://wa.me/${item.phone.replace(/\D/g,'')}?text=Hola%20${encodeURIComponent(item.full_name)},%20le%20escribimos%20de%20la%20Farmacia%20para%20recordarle%20el%20resurtido%20de%20su%20${encodeURIComponent(item.medication_name)}" 
+                        <a href="https://wa.me/${item.phone.replace(/\D/g,'')}?text=${encodeURIComponent(message)}" 
                            target="_blank" class="btn-action btn-whatsapp">
                             <i class="fab fa-whatsapp"></i> WhatsApp
                         </a>
