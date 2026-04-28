@@ -219,15 +219,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const statusClass = item.next_contact_date <= todayISO ? 'today' : 'soon';
             const statusText = daysLeft <= 0 ? 'AGOTADO HOY' : `Faltan ${daysLeft} días`;
 
-            const emojiSource = document.getElementById('emoji-source').innerText;
-            const wave = emojiSource.substring(0, 2);
-            const smile = emojiSource.substring(2, 4);
-            const hospital = emojiSource.substring(4, 6);
-            const pill = emojiSource.substring(6, 8);
-            const moto = emojiSource.substring(8, 10);
-            const sparkles = emojiSource.substring(10, 12);
+            // Construcción del mensaje con escapes Unicode para máxima compatibilidad de codificación
+            const eWave = document.getElementById('e-wave').textContent;
+            const eSmile = document.getElementById('e-smile').textContent;
+            const ePill = document.getElementById('e-pill').textContent;
+            const ePoint = document.getElementById('e-point').textContent;
 
-            const message = `\u00A1Hola ${item.full_name}! ${wave}${smile}\nLe escribimos de *Farmacias Madero* ${hospital} para recordarle el resurtido de su medicamento: *${item.medication_name}* ${pill}.\n\n\u00BFDesea que se lo apartemos o se lo enviemos a domicilio? ${moto}${sparkles}`;
+            const message = `\u00A1Hola ${item.full_name}! ${eWave}${eSmile}\nLe escribimos de *Farmacias Madero* ${ePill} para recordarle el resurtido de su medicamento: *${item.medication_name}* ${ePill}.\n\n\u00BFDesea que se lo apartemos o se lo enviemos a domicilio? ${ePoint}${ePoint}`;
+            
+            // Aplicamos encodeURIComponent para asegurar que emojis y caracteres especiales lleguen intactos
+            const encodedMessage = encodeURIComponent(message);
+            const whatsappUrl = `https://wa.me/${item.phone.replace(/\D/g, '')}?text=${encodedMessage}`;
 
             return `
                 <div class="agenda-card">
@@ -241,8 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p><i class="fas fa-phone"></i> ${item.phone}</p>
                     </div>
                     <div class="card-actions">
-                        <a href="https://wa.me/${item.phone.replace(/\D/g,'')}?text=${encodeURIComponent(message)}" 
-                           target="_blank" class="btn-action btn-whatsapp">
+                        <a href="${whatsappUrl}" target="_blank" class="btn-action btn-whatsapp">
                             <i class="fab fa-whatsapp"></i> WhatsApp
                         </a>
                         <button class="btn-action btn-edit" data-id="${item.id}">

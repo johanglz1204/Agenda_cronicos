@@ -12,7 +12,12 @@
 </head>
 <body>
     <!-- Almacén de emojis para evitar errores de codificación en JS -->
-    <div id="emoji-source" style="display:none;">👋😊🏥💊🛵✨</div>
+    <div id="emoji-source" style="display:none;">
+      <span id="e-wave">👋</span>
+      <span id="e-smile">😊</span>
+      <span id="e-pill">💊</span>
+      <span id="e-point">👆</span>
+    </div>
 
     <!-- Pantalla de Login -->
     <div id="login-screen" class="login-overlay">
@@ -226,6 +231,6 @@
     <div id="toast" class="toast"></div>
 
     <!-- Firebase SDK -->
-    <script type="module" charset="UTF-8" src="js/main.js?v=14"></script>
+    <script type="module" charset="UTF-8" src="js/main.js?v=15"></script>
 </body>
 </html>
