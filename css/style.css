@@ -277,6 +277,9 @@ body {
 .btn-whatsapp { background: #25d366; color: white; }
 .btn-whatsapp:hover { background: #128c7e; }
 
+.btn-edit { background: #f1f5f9; color: var(--text-main); }
+.btn-edit:hover { background: #e2e8f0; }
+
 /* Form Styles */
 .form-container {
     background: white;

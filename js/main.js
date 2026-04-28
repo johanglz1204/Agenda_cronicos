@@ -1,6 +1,5 @@
-// Import the functions you need from the SDKs you need
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 // --- CONFIGURACIÓN DE FIREBASE ---
 // TODO: Reemplaza esto con tus propias llaves de Firebase Console
@@ -29,6 +28,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalPatientsEl = document.getElementById('total-patients');
     const currentDateEl = document.getElementById('current-date');
     const toast = document.getElementById('toast');
+    const searchContainer = document.querySelector('.search-container');
+    const searchInput = document.querySelector('.search-container input');
+
+    let currentAgendaData = [];
+    let editModeId = null;
 
     // Set current date
     const now = new Date();
@@ -47,8 +51,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 tab.classList.remove('active');
                 if (tab.id === `tab-${tabId}`) tab.classList.add('active');
             });
-            if (tabId === 'agenda') loadAgenda();
+
+            // Ocultar buscador si no estamos en la agenda
+            if (tabId === 'agenda') {
+                searchContainer.style.visibility = 'visible';
+                searchInput.value = '';
+                loadAgenda();
+            } else {
+                searchContainer.style.visibility = 'hidden';
+            }
         });
+    });
+
+    // --- Buscador ---
+    searchInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        const filtered = currentAgendaData.filter(item => 
+            item.full_name.toLowerCase().includes(term) || 
+            item.medication_name.toLowerCase().includes(term) ||
+            item.phone.includes(term)
+        );
+        
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        renderAgenda(filtered, today.toISOString().split('T')[0]);
     });
 
     // --- Database Logic (Firebase) ---
@@ -64,24 +90,25 @@ document.addEventListener('DOMContentLoaded', () => {
             // Traemos todos los tratamientos (más simple y evita errores de índices)
             const querySnapshot = await getDocs(collection(db, "treatments"));
             
-            let agendaData = [];
+            currentAgendaData = [];
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
+                data.id = doc.id; // Guardamos el ID para poder editar
                 if (data.active === true) {
-                    agendaData.push(data);
+                    currentAgendaData.push(data);
                 }
             });
 
             // Ordenamos por fecha de contacto en JavaScript (con protección por si algún campo está vacío)
-            agendaData.sort((a, b) => {
+            currentAgendaData.sort((a, b) => {
                 const dateA = a.next_contact_date || "";
                 const dateB = b.next_contact_date || "";
                 return dateA.localeCompare(dateB);
             });
 
-            renderAgenda(agendaData, todayISO);
-            pendingCount.innerText = agendaData.filter(i => i.next_contact_date <= todayISO).length;
-            totalPatientsEl.innerText = agendaData.length;
+            renderAgenda(currentAgendaData, todayISO);
+            pendingCount.innerText = currentAgendaData.filter(i => i.next_contact_date <= todayISO).length;
+            totalPatientsEl.innerText = currentAgendaData.length;
 
         } catch (error) {
             console.error(error);
@@ -117,10 +144,43 @@ document.addEventListener('DOMContentLoaded', () => {
                            target="_blank" class="btn-action btn-whatsapp">
                             <i class="fab fa-whatsapp"></i> WhatsApp
                         </a>
+                        <button class="btn-action btn-edit" data-id="${item.id}">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
                     </div>
                 </div>
             `;
         }).join('');
+
+        // Añadir eventos a los botones de editar
+        document.querySelectorAll('.btn-edit').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.currentTarget.getAttribute('data-id');
+                openEditMode(id);
+            });
+        });
+    }
+
+    function openEditMode(id) {
+        const item = currentAgendaData.find(i => i.id === id);
+        if (!item) return;
+        
+        editModeId = id;
+        
+        // Llenar formulario
+        document.getElementById('full_name').value = item.full_name;
+        document.getElementById('phone').value = item.phone;
+        document.getElementById('email').value = item.email || '';
+        document.getElementById('medication_name').value = item.medication_name;
+        document.getElementById('quantity_supplied').value = item.quantity_supplied;
+        document.getElementById('daily_dosage').value = item.daily_dosage;
+        document.getElementById('start_date').value = item.start_date;
+
+        // Cambiar texto del botón
+        document.querySelector('#registration-form .btn-submit').innerHTML = '<i class="fas fa-save"></i> Actualizar Registro';
+        
+        // Mover a la pestaña de registro
+        document.querySelector('[data-tab="patients"]').click();
     }
 
     // --- Form Handling ---
@@ -155,15 +215,25 @@ document.addEventListener('DOMContentLoaded', () => {
             start_date: startDate,
             estimated_end_date: endDate.toISOString().split('T')[0],
             next_contact_date: contactDate.toISOString().split('T')[0],
-            active: true,
-            created_at: serverTimestamp()
+            active: true
         };
 
         try {
-            await addDoc(collection(db, "treatments"), treatmentData);
-            showToast('¡Registro guardado en la nube!', 'success');
+            if (editModeId) {
+                await updateDoc(doc(db, "treatments", editModeId), treatmentData);
+                showToast('¡Registro actualizado!', 'success');
+            } else {
+                treatmentData.created_at = serverTimestamp();
+                await addDoc(collection(db, "treatments"), treatmentData);
+                showToast('¡Registro guardado en la nube!', 'success');
+            }
+            
+            // Limpiar y resetear formulario
             registrationForm.reset();
-            setTimeout(() => document.querySelector('[data-tab="agenda"]').click(), 1500);
+            editModeId = null;
+            document.querySelector('#registration-form .btn-submit').innerHTML = '<i class="fas fa-save"></i> Guardar Registro';
+            
+            setTimeout(() => document.querySelector('[data-tab="agenda"]').click(), 1000);
         } catch (error) {
             console.error(error);
             showToast('Error al guardar. Revisa la consola.', 'error');
