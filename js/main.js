@@ -85,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (user === 'admin' && pass === '7294967290') {
             sessionStorage.setItem('isLoggedIn', 'true');
             sessionStorage.setItem('role', 'admin');
+            sessionStorage.setItem('username', 'admin');
             showApp();
             return;
         }
@@ -98,6 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const userData = querySnapshot.docs[0].data();
                 sessionStorage.setItem('isLoggedIn', 'true');
                 sessionStorage.setItem('role', userData.role || 'vendedor');
+                sessionStorage.setItem('username', userData.username);
                 showApp();
             } else {
                 loginError.style.display = 'block';
@@ -177,9 +179,17 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             const todayISO = getTodayISO();
+            const role = sessionStorage.getItem('role');
+            const username = sessionStorage.getItem('username');
+            
+            let q;
+            if (role === 'admin') {
+                q = collection(db, "treatments");
+            } else {
+                q = query(collection(db, "treatments"), where("created_by", "==", username));
+            }
 
-            // Traemos todos los tratamientos (más simple y evita errores de índices)
-            const querySnapshot = await getDocs(collection(db, "treatments"));
+            const querySnapshot = await getDocs(q);
             
             currentAgendaData = [];
             querySnapshot.forEach((doc) => {
@@ -311,6 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
             start_date: startDate,
             estimated_end_date: endDate.toISOString().split('T')[0],
             next_contact_date: contactDate.toISOString().split('T')[0],
+            created_by: sessionStorage.getItem('username'),
             active: true
         };
 
