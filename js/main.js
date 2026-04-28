@@ -49,12 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return getTodayDate().toISOString().split('T')[0];
     }
 
-    function getThresholdISO(days) {
-        const d = getTodayDate();
-        d.setDate(d.getDate() + days);
-        return d.toISOString().split('T')[0];
-    }
-
     function updateCurrentDateDisplay() {
         const d = getTodayDate();
         currentDateEl.innerText = d.toLocaleDateString('es-ES', { 
@@ -138,9 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
         );
         
         const todayISO = getTodayISO();
-        const thresholdISO = getThresholdISO(3);
         renderAgenda(filtered, todayISO);
-        pendingCount.innerText = filtered.filter(i => i.next_contact_date <= thresholdISO).length;
+        pendingCount.innerText = filtered.filter(i => calculateDaysDiff(i.estimated_end_date) <= 3).length;
     });
 
     // --- Database Logic (Firebase) ---
@@ -170,9 +163,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return dateA.localeCompare(dateB);
             });
 
-            const thresholdISO = getThresholdISO(3);
             renderAgenda(currentAgendaData, todayISO);
-            pendingCount.innerText = currentAgendaData.filter(i => i.next_contact_date <= thresholdISO).length;
+            pendingCount.innerText = currentAgendaData.filter(i => calculateDaysDiff(i.estimated_end_date) <= 3).length;
             totalPatientsEl.innerText = currentAgendaData.length;
 
         } catch (error) {
