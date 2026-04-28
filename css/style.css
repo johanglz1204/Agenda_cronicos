@@ -305,6 +305,38 @@ body {
     text-align: left;
 }
 
+/* User Management Styles */
+.users-list {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.user-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8fafc;
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+.user-info {
+    display: flex;
+    gap: 15px;
+    font-size: 0.9rem;
+}
+.user-info strong { color: var(--primary); }
+.btn-delete-user {
+    color: #ef4444;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    transition: transform 0.2s;
+}
+.btn-delete-user:hover { transform: scale(1.2); }
+
 /* Form Styles */
 .form-container {
     background: white;

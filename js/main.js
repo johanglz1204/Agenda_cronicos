@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 // --- CONFIGURACIÓN DE FIREBASE ---
 // TODO: Reemplaza esto con tus propias llaves de Firebase Console
@@ -76,16 +76,35 @@ document.addEventListener('DOMContentLoaded', () => {
         showApp();
     }
 
-    loginForm.addEventListener('submit', (e) => {
+    loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const user = document.getElementById('login-user').value.trim();
         const pass = document.getElementById('login-pass').value.trim();
 
+        // 1. Acceso maestro de respaldo
         if (user === 'admin' && pass === '7294967290') {
             sessionStorage.setItem('isLoggedIn', 'true');
             sessionStorage.setItem('role', 'admin');
             showApp();
-        } else {
+            return;
+        }
+
+        // 2. Consulta a Firestore para usuarios adicionales
+        try {
+            const q = query(collection(db, "users"), where("username", "==", user), where("password", "==", pass));
+            const querySnapshot = await getDocs(q);
+            
+            if (!querySnapshot.empty) {
+                const userData = querySnapshot.docs[0].data();
+                sessionStorage.setItem('isLoggedIn', 'true');
+                sessionStorage.setItem('role', userData.role || 'vendedor');
+                showApp();
+            } else {
+                loginError.style.display = 'block';
+            }
+        } catch (error) {
+            console.error("Login error:", error);
+            loginError.innerText = "Error de conexión con la base de datos.";
             loginError.style.display = 'block';
         }
     });
@@ -116,6 +135,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 searchContainer.style.visibility = 'visible';
                 searchInput.value = '';
                 loadAgenda();
+            } else if (tabId === 'devtools') {
+                searchContainer.style.visibility = 'hidden';
+                loadUsers(); // Cargar usuarios al entrar a Modo Dev
             } else {
                 searchContainer.style.visibility = 'hidden';
             }
@@ -336,6 +358,77 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('Fecha real restaurada', 'success');
             setTimeout(() => document.querySelector('[data-tab="agenda"]').click(), 1000);
         });
+    }
+
+    // --- Gestión de Usuarios ---
+    const userManagementForm = document.getElementById('user-management-form');
+    const usersList = document.getElementById('users-list');
+
+    if (userManagementForm) {
+        userManagementForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('new-username').value.trim();
+            const password = document.getElementById('new-password').value.trim();
+
+            try {
+                await addDoc(collection(db, "users"), {
+                    username,
+                    password,
+                    role: 'vendedor',
+                    created_at: serverTimestamp()
+                });
+                showToast('Usuario creado con éxito', 'success');
+                userManagementForm.reset();
+                loadUsers();
+            } catch (error) {
+                console.error(error);
+                showToast('Error al crear usuario', 'error');
+            }
+        });
+    }
+
+    async function loadUsers() {
+        if (!usersList) return;
+        usersList.innerHTML = '<p>Cargando usuarios...</p>';
+        
+        try {
+            const querySnapshot = await getDocs(collection(db, "users"));
+            if (querySnapshot.empty) {
+                usersList.innerHTML = '<p style="color: var(--text-muted);">No hay usuarios registrados aún.</p>';
+                return;
+            }
+
+            usersList.innerHTML = querySnapshot.docs.map(doc => {
+                const data = doc.data();
+                return `
+                    <div class="user-item">
+                        <div class="user-info">
+                            <span>Usuario: <strong>${data.username}</strong></span>
+                            <span>Clave: <strong>${data.password}</strong></span>
+                        </div>
+                        <button class="btn-delete-user" data-id="${doc.id}" title="Eliminar usuario">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            // Eventos para eliminar
+            document.querySelectorAll('.btn-delete-user').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = e.currentTarget.getAttribute('data-id');
+                    if (confirm('¿Seguro que quieres eliminar este acceso?')) {
+                        await deleteDoc(doc(db, "users", id));
+                        showToast('Usuario eliminado', 'success');
+                        loadUsers();
+                    }
+                });
+            });
+
+        } catch (error) {
+            console.error(error);
+            usersList.innerHTML = '<p class="error-msg">Error al cargar lista de usuarios.</p>';
+        }
     }
 
     // Se eliminó la carga inicial para que solo cargue tras el login.
