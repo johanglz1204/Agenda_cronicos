@@ -80,10 +80,9 @@
                         <h2>Próximos Contactos</h2>
                     </div>
                     <div id="agenda-list" class="agenda-cards">
-                        <!-- Cards will be injected here -->
                         <div class="loading-state">
                             <i class="fas fa-spinner fa-spin"></i>
-                            <p>Cargando pacientes...</p>
+                            <p>Cargando pacientes desde la nube...</p>
                         </div>
                     </div>
                 </div>
@@ -118,11 +117,15 @@
                             <div class="form-section">
                                 <h3><i class="fas fa-capsules"></i> Detalles del Tratamiento</h3>
                                 <div class="form-group">
-                                    <label for="medication_id">Medicamento</label>
-                                    <select id="medication_id" required>
-                                        <option value="">Selecciona un medicamento</option>
-                                        <!-- Options injected by JS -->
-                                    </select>
+                                    <label for="medication_name">Nombre del Medicamento</label>
+                                    <input type="text" id="medication_name" list="med-suggestions" required placeholder="Ej. Paracetamol 500mg">
+                                    <datalist id="med-suggestions">
+                                        <option value="Paracetamol 500mg">
+                                        <option value="Amoxicilina 500mg">
+                                        <option value="Ibuprofeno 400mg">
+                                        <option value="Metformina 850mg">
+                                        <option value="Loratadina 10mg">
+                                    </datalist>
                                 </div>
                                 <div class="form-grid-inner">
                                     <div class="form-group">
@@ -152,6 +155,7 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast"></div>
 
-    <script src="js/main.js"></script>
+    <!-- Firebase SDK -->
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>
