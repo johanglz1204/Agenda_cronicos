@@ -172,8 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('phone').value = item.phone;
         document.getElementById('email').value = item.email || '';
         document.getElementById('medication_name').value = item.medication_name;
-        document.getElementById('quantity_supplied').value = item.quantity_supplied;
-        document.getElementById('daily_dosage').value = item.daily_dosage;
+        document.getElementById('recurrence').value = item.recurrence || '30';
         document.getElementById('start_date').value = item.start_date;
 
         // Cambiar texto del botón
@@ -191,16 +190,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const phone = document.getElementById('phone').value;
         const email = document.getElementById('email').value;
         const medName = document.getElementById('medication_name').value;
-        const qty = parseFloat(document.getElementById('quantity_supplied').value);
-        const dosage = parseFloat(document.getElementById('daily_dosage').value);
+        const recurrenceDays = parseInt(document.getElementById('recurrence').value);
         const startDate = document.getElementById('start_date').value;
 
-        // Lógica de cálculo (antes en el backend)
-        const start = new Date(startDate);
-        const durationDays = Math.floor(qty / dosage);
-        
+        // Forzamos mediodía (T12:00:00) para evitar que JS reste un día por la zona horaria
+        const start = new Date(startDate + "T12:00:00");
         const endDate = new Date(start);
-        endDate.setDate(start.getDate() + durationDays);
+        endDate.setDate(start.getDate() + recurrenceDays);
         
         const contactDate = new Date(endDate);
         contactDate.setDate(endDate.getDate() - 3); // Margen de 3 días
@@ -210,8 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
             phone: phone,
             email: email,
             medication_name: medName,
-            quantity_supplied: qty,
-            daily_dosage: dosage,
+            recurrence: recurrenceDays,
             start_date: startDate,
             estimated_end_date: endDate.toISOString().split('T')[0],
             next_contact_date: contactDate.toISOString().split('T')[0],
@@ -249,15 +244,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function calculateDaysDiff(dateStr) {
-        const end = new Date(dateStr);
+        const end = new Date(dateStr + "T12:00:00");
         const today = new Date();
-        today.setHours(0,0,0,0);
+        today.setHours(12,0,0,0);
         const diffTime = end - today;
         return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     }
 
     function formatDate(dateStr) {
-        const d = new Date(dateStr);
+        const d = new Date(dateStr + "T12:00:00");
         return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
     }
 

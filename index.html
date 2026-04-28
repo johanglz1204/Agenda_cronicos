@@ -127,15 +127,15 @@
                                         <option value="Loratadina 10mg">
                                     </datalist>
                                 </div>
-                                <div class="form-grid-inner">
-                                    <div class="form-group">
-                                        <label for="quantity_supplied">Cantidad Surtida</label>
-                                        <input type="number" id="quantity_supplied" step="0.1" required placeholder="Ej. 30">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="daily_dosage">Dosis Diaria</label>
-                                        <input type="number" id="daily_dosage" step="0.1" required placeholder="Ej. 1">
-                                    </div>
+                                <div class="form-group">
+                                    <label for="recurrence">Frecuencia de Resurtido</label>
+                                    <select id="recurrence" required>
+                                        <option value="">Selecciona la frecuencia</option>
+                                        <option value="7">Semanal (7 días)</option>
+                                        <option value="15">Quincenal (15 días)</option>
+                                        <option value="30">Mensual (30 días)</option>
+                                        <option value="60">Cada dos meses (60 días)</option>
+                                    </select>
                                 </div>
                                 <div class="form-group">
                                     <label for="start_date">Fecha de Compra/Inicio</label>
@@ -156,6 +156,6 @@
     <div id="toast" class="toast"></div>
 
     <!-- Firebase SDK -->
-    <script type="module" src="js/main.js?v=3"></script>
+    <script type="module" src="js/main.js?v=4"></script>
 </body>
 </html>
