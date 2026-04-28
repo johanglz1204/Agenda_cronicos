@@ -219,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const statusClass = item.next_contact_date <= todayISO ? 'today' : 'soon';
             const statusText = daysLeft <= 0 ? 'AGOTADO HOY' : `Faltan ${daysLeft} días`;
 
-            const message = `¡Hola ${item.full_name}! 👋😊\nLe escribimos de *Farmacias Madero* 🏥 para recordarle el resurtido de su medicamento: *${item.medication_name}* 💊.\n\n¿Desea que se lo apartemos o se lo enviemos a domicilio? 🛵✨`;
+            const message = `\u00A1Hola ${item.full_name}! \uD83D\uDC4B\uD83D\uDE0A\nLe escribimos de *Farmacias Madero* \uD83C\uDFE5 para recordarle el resurtido de su medicamento: *${item.medication_name}* \uD83D\uDC8A.\n\n\u00BFDesea que se lo apartemos o se lo enviemos a domicilio? \uD83D\uDEF5\u2728`;
 
             return `
                 <div class="agenda-card">
