@@ -226,8 +226,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const ePoint = String.fromCodePoint(0x1F446);
 
             const message = `\u00A1Hola ${item.full_name}! ${eWave}${eSmile}\nLe escribimos de *Farmacias Madero* ${ePill} para recordarle el resurtido de su medicamento: *${item.medication_name}* ${ePill}.\n\n\u00BFDesea que se lo apartemos o se lo enviemos a domicilio? ${ePoint}${ePoint}`;
-            const encodedMessage = encodeURIComponent(message);
-            const whatsappUrl = `https://wa.me/${item.phone.replace(/\D/g, '')}?text=${encodedMessage}`;
+
+            const phone = item.phone.replace(/\D/g, '');
+            const whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
 
             return `
                 <div class="agenda-card">
