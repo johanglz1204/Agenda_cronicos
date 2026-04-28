@@ -182,11 +182,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const role = sessionStorage.getItem('role');
             const username = sessionStorage.getItem('username');
             
+            console.log("Cargando agenda para:", username, "con rol:", role);
+
             let q;
             if (role === 'admin') {
                 q = collection(db, "treatments");
-            } else {
+            } else if (username) {
                 q = query(collection(db, "treatments"), where("created_by", "==", username));
+            } else {
+                // Si por alguna razón no hay usuario, no mostrar nada
+                renderAgenda([], todayISO);
+                return;
             }
 
             const querySnapshot = await getDocs(q);
