@@ -220,14 +220,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const statusText = daysLeft <= 0 ? 'AGOTADO HOY' : `Faltan ${daysLeft} días`;
 
             // Construcción del mensaje con escapes Unicode para máxima compatibilidad de codificación
-            const eWave = document.getElementById('e-wave').textContent;
-            const eSmile = document.getElementById('e-smile').textContent;
-            const ePill = document.getElementById('e-pill').textContent;
-            const ePoint = document.getElementById('e-point').textContent;
+            const eWave  = String.fromCodePoint(0x1F44B);
+            const eSmile = String.fromCodePoint(0x1F60A);
+            const ePill  = String.fromCodePoint(0x1F48A);
+            const ePoint = String.fromCodePoint(0x1F446);
 
             const message = `\u00A1Hola ${item.full_name}! ${eWave}${eSmile}\nLe escribimos de *Farmacias Madero* ${ePill} para recordarle el resurtido de su medicamento: *${item.medication_name}* ${ePill}.\n\n\u00BFDesea que se lo apartemos o se lo enviemos a domicilio? ${ePoint}${ePoint}`;
-            
-            // Aplicamos encodeURIComponent para asegurar que emojis y caracteres especiales lleguen intactos
             const encodedMessage = encodeURIComponent(message);
             const whatsappUrl = `https://wa.me/${item.phone.replace(/\D/g, '')}?text=${encodedMessage}`;
 
