@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmacia Agenda | Seguimiento de Pacientes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-hand-holding-medical"></i>
+                    <span>FarmaAgenda</span>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li class="active" data-tab="agenda">
+                    <a href="#"><i class="fas fa-calendar-check"></i> <span>Agenda Hoy</span></a>
+                </li>
+                <li data-tab="patients">
+                    <a href="#"><i class="fas fa-user-plus"></i> <span>Registrar Paciente</span></a>
+                </li>
+                <li data-tab="medications">
+                    <a href="#"><i class="fas fa-pills"></i> <span>Medicamentos</span></a>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <p>© 2026 FarmaAgenda</p>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Buscar paciente...">
+                </div>
+                <div class="user-profile">
+                    <span id="current-date">Cargando fecha...</span>
+                    <div class="avatar">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Agenda View -->
+            <section id="tab-agenda" class="tab-content active">
+                <div class="content-header">
+                    <h1>Agenda de Resurtidos</h1>
+                    <p>Pacientes que requieren contacto para renovación de tratamiento.</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon alert"><i class="fas fa-bell"></i></div>
+                        <div class="stat-info">
+                            <h3 id="pending-count">0</h3>
+                            <span>Pendientes hoy</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon info"><i class="fas fa-users"></i></div>
+                        <div class="stat-info">
+                            <h3 id="total-patients">0</h3>
+                            <span>Pacientes totales</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="data-table-container">
+                    <div class="table-header">
+                        <h2>Próximos Contactos</h2>
+                    </div>
+                    <div id="agenda-list" class="agenda-cards">
+                        <!-- Cards will be injected here -->
+                        <div class="loading-state">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Cargando pacientes...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Registration View -->
+            <section id="tab-patients" class="tab-content">
+                <div class="content-header">
+                    <h1>Nuevo Paciente y Tratamiento</h1>
+                    <p>Registra la información del paciente y su esquema de medicación.</p>
+                </div>
+
+                <div class="form-container glass">
+                    <form id="registration-form">
+                        <div class="form-grid">
+                            <div class="form-section">
+                                <h3><i class="fas fa-user"></i> Datos del Paciente</h3>
+                                <div class="form-group">
+                                    <label for="full_name">Nombre Completo</label>
+                                    <input type="text" id="full_name" required placeholder="Ej. Juan Pérez">
+                                </div>
+                                <div class="form-group">
+                                    <label for="phone">Teléfono / WhatsApp</label>
+                                    <input type="tel" id="phone" required placeholder="Ej. 5512345678">
+                                </div>
+                                <div class="form-group">
+                                    <label for="email">Email (Opcional)</label>
+                                    <input type="email" id="email" placeholder="correo@ejemplo.com">
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h3><i class="fas fa-capsules"></i> Detalles del Tratamiento</h3>
+                                <div class="form-group">
+                                    <label for="medication_id">Medicamento</label>
+                                    <select id="medication_id" required>
+                                        <option value="">Selecciona un medicamento</option>
+                                        <!-- Options injected by JS -->
+                                    </select>
+                                </div>
+                                <div class="form-grid-inner">
+                                    <div class="form-group">
+                                        <label for="quantity_supplied">Cantidad Surtida</label>
+                                        <input type="number" id="quantity_supplied" step="0.1" required placeholder="Ej. 30">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="daily_dosage">Dosis Diaria</label>
+                                        <input type="number" id="daily_dosage" step="0.1" required placeholder="Ej. 1">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="start_date">Fecha de Compra/Inicio</label>
+                                    <input type="date" id="start_date" required>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-submit">
+                            <i class="fas fa-save"></i> Guardar Registro
+                        </button>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast"></div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

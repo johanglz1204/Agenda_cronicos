@@ -72,3 +72,13 @@ exports.getRefillAgenda = async (req, res) => {
     res.status(500).json({ error: 'Error al obtener la agenda de resurtidos' });
   }
 };
+
+exports.getMedications = async (req, res) => {
+  try {
+    const medications = await db('medications').select('*').orderBy('name', 'asc');
+    res.json(medications);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener medicamentos' });
+  }
+};
