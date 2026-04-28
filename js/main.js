@@ -33,12 +33,71 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentAgendaData = [];
     let editModeId = null;
+    let simulatedDate = null; // Para el modo desarrollador
 
-    // Set current date
-    const now = new Date();
-    currentDateEl.innerText = now.toLocaleDateString('es-ES', { 
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+    // --- Helper para Fechas (Soporta simulación) ---
+    function getTodayDate() {
+        if (simulatedDate) {
+            return new Date(simulatedDate + "T12:00:00");
+        }
+        const d = new Date();
+        d.setHours(12,0,0,0);
+        return d;
+    }
+
+    function getTodayISO() {
+        return getTodayDate().toISOString().split('T')[0];
+    }
+
+    function updateCurrentDateDisplay() {
+        const d = getTodayDate();
+        currentDateEl.innerText = d.toLocaleDateString('es-ES', { 
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+        });
+        if(simulatedDate) {
+            currentDateEl.innerText += ' (SIMULADA)';
+            currentDateEl.style.color = 'var(--danger)';
+        } else {
+            currentDateEl.style.color = 'var(--text-muted)';
+        }
+    }
+
+    // Set current date on load
+    updateCurrentDateDisplay();
+
+    // --- Login Logic ---
+    const loginScreen = document.getElementById('login-screen');
+    const appContainer = document.getElementById('app-container');
+    const loginForm = document.getElementById('login-form');
+    const loginError = document.getElementById('login-error');
+    const navDevtools = document.getElementById('nav-devtools');
+
+    if (sessionStorage.getItem('isLoggedIn') === 'true') {
+        showApp();
+    }
+
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const user = document.getElementById('login-user').value.trim();
+        const pass = document.getElementById('login-pass').value.trim();
+
+        if (user === 'admin' && pass === '7294967290') {
+            sessionStorage.setItem('isLoggedIn', 'true');
+            sessionStorage.setItem('role', 'admin');
+            showApp();
+        } else {
+            loginError.style.display = 'block';
+        }
     });
+
+    function showApp() {
+        loginScreen.style.display = 'none';
+        appContainer.style.display = 'flex';
+        if (sessionStorage.getItem('role') === 'admin') {
+            navDevtools.style.display = 'flex';
+        }
+        loadAgenda(); // Cargar agenda al entrar
+    }
 
     // --- Navigation ---
     navLinks.forEach(link => {
@@ -72,9 +131,8 @@ document.addEventListener('DOMContentLoaded', () => {
             item.phone.includes(term)
         );
         
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        renderAgenda(filtered, today.toISOString().split('T')[0]);
+        const todayISO = getTodayISO();
+        renderAgenda(filtered, todayISO);
     });
 
     // --- Database Logic (Firebase) ---
@@ -83,9 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
         agendaList.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>Conectando con la base de datos...</p></div>';
         
         try {
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            const todayISO = today.toISOString().split('T')[0];
+            const todayISO = getTodayISO();
 
             // Traemos todos los tratamientos (más simple y evita errores de índices)
             const querySnapshot = await getDocs(collection(db, "treatments"));
@@ -245,8 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function calculateDaysDiff(dateStr) {
         const end = new Date(dateStr + "T12:00:00");
-        const today = new Date();
-        today.setHours(12,0,0,0);
+        const today = getTodayDate();
         const diffTime = end - today;
         return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     }
@@ -256,6 +311,29 @@ document.addEventListener('DOMContentLoaded', () => {
         return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
     }
 
-    // Initial Load
-    loadAgenda();
+    // --- Modo Desarrollador ---
+    const btnSimulateDate = document.getElementById('btn-simulate-date');
+    const btnResetDate = document.getElementById('btn-reset-date');
+    const devDateInput = document.getElementById('dev-simulated-date');
+
+    if (btnSimulateDate) {
+        btnSimulateDate.addEventListener('click', () => {
+            if (devDateInput.value) {
+                simulatedDate = devDateInput.value;
+                updateCurrentDateDisplay();
+                showToast('Fecha simulada aplicada: ' + formatDate(simulatedDate), 'success');
+                setTimeout(() => document.querySelector('[data-tab="agenda"]').click(), 1000);
+            }
+        });
+
+        btnResetDate.addEventListener('click', () => {
+            simulatedDate = null;
+            devDateInput.value = '';
+            updateCurrentDateDisplay();
+            showToast('Fecha real restaurada', 'success');
+            setTimeout(() => document.querySelector('[data-tab="agenda"]').click(), 1000);
+        });
+    }
+
+    // Se eliminó la carga inicial para que solo cargue tras el login.
 });

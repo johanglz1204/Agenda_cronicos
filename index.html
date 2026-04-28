@@ -11,7 +11,26 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="app-container">
+    <!-- Pantalla de Login -->
+    <div id="login-screen" class="login-overlay">
+        <div class="login-box glass">
+            <h2><i class="fas fa-lock"></i> Acceso a FarmaAgenda</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label>Usuario</label>
+                    <input type="text" id="login-user" required placeholder="Ingresa tu usuario">
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="login-pass" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn-submit">Ingresar</button>
+            </form>
+            <p id="login-error" style="display:none; color: var(--danger); margin-top: 10px; text-align: center; font-weight: 600;">Credenciales incorrectas.</p>
+        </div>
+    </div>
+
+    <div class="app-container" id="app-container" style="display: none;">
         <!-- Sidebar Navigation -->
         <nav class="sidebar">
             <div class="sidebar-header">
@@ -29,6 +48,10 @@
                 </li>
                 <li data-tab="medications">
                     <a href="#"><i class="fas fa-pills"></i> <span>Medicamentos</span></a>
+                </li>
+                <!-- Solo visible para admin -->
+                <li data-tab="devtools" id="nav-devtools" style="display:none;">
+                    <a href="#"><i class="fas fa-wrench"></i> <span>Modo Dev</span></a>
                 </li>
             </ul>
             <div class="sidebar-footer">
@@ -149,6 +172,26 @@
                     </form>
                 </div>
             </section>
+
+            <!-- Modo Desarrollador -->
+            <section id="tab-devtools" class="tab-content">
+                <div class="content-header">
+                    <h1>Herramientas de Desarrollador</h1>
+                    <p>Simula el paso del tiempo para probar las alertas de resurtido.</p>
+                </div>
+                <div class="form-container glass">
+                    <div class="form-section">
+                        <h3><i class="fas fa-clock"></i> Máquina del Tiempo</h3>
+                        <p style="margin-bottom: 1.5rem; color: var(--text-muted);">Selecciona una fecha futura. Toda la aplicación creerá que hoy es ese día.</p>
+                        <div class="form-group">
+                            <label>Forzar Fecha (Simular Hoy)</label>
+                            <input type="date" id="dev-simulated-date">
+                        </div>
+                        <button id="btn-simulate-date" class="btn-submit"><i class="fas fa-play"></i> Aplicar Fecha Simulada</button>
+                        <button id="btn-reset-date" class="btn-action btn-edit" style="margin-top: 15px; width: 100%;"><i class="fas fa-undo"></i> Restaurar Fecha Real</button>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -156,6 +199,6 @@
     <div id="toast" class="toast"></div>
 
     <!-- Firebase SDK -->
-    <script type="module" src="js/main.js?v=4"></script>
+    <script type="module" src="js/main.js?v=5"></script>
 </body>
 </html>
