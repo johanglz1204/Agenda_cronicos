@@ -287,40 +287,51 @@ body {
 .card-actions {
     margin-top: 1.5rem;
     display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.action-row {
+    display: flex;
     gap: 8px;
-    align-items: center;
+    width: 100%;
 }
 
 .btn-action {
     flex: 1;
-    padding: 10px 5px;
+    padding: 10px 12px;
     border-radius: 12px;
     border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 8px;
     font-weight: 600;
     transition: 0.3s;
     text-decoration: none;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
-.btn-whatsapp { background: #25d366; color: white; flex: 2; }
-.btn-whatsapp:hover { background: #128c7e; }
+.btn-whatsapp { 
+    background: #25d366; 
+    color: white; 
+    padding: 12px;
+    font-size: 1rem;
+}
+.btn-whatsapp:hover { background: #128c7e; transform: translateY(-2px); }
 
-.btn-edit { background: #f1f5f9; color: var(--text-main); flex: 0 0 40px; height: 40px; }
-.btn-edit:hover { background: #e2e8f0; }
-
-.btn-renew { background: #e0e7ff; color: var(--primary); flex: 0 0 40px; height: 40px; }
+.btn-renew { background: #e0e7ff; color: var(--primary); }
 .btn-renew:hover { background: #c7d2fe; }
 
-.btn-fail { background: #fff7ed; color: #f97316; flex: 0 0 40px; height: 40px; }
+.btn-fail { background: #fff7ed; color: #f97316; }
 .btn-fail:hover { background: #ffedd5; }
 
-.btn-delete { background: #fee2e2; color: #ef4444; flex: 0 0 40px; height: 40px; }
-.btn-delete:hover { background: #fecaca; }
+.btn-edit { background: #f1f5f9; color: var(--text-muted); font-size: 0.8rem; }
+.btn-edit:hover { background: #e2e8f0; color: var(--text-main); }
+
+.btn-delete { background: #fff1f2; color: #f43f5e; font-size: 0.8rem; }
+.btn-delete:hover { background: #ffe4e6; }
 
 .fail-note {
     margin-top: 8px;

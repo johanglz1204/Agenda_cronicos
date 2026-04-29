@@ -290,20 +290,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="card-actions">
                         <a href="${whatsappUrl}" target="_blank" class="btn-action btn-whatsapp" title="Contactar por WhatsApp">
-                            <i class="fab fa-whatsapp"></i> WhatsApp
+                            <i class="fab fa-whatsapp"></i> Enviar Mensaje de WhatsApp
                         </a>
-                        <button class="btn-action btn-renew" data-id="${item.id}" title="Marcar como Resurtido (Reiniciar contador)">
-                            <i class="fas fa-check-circle"></i>
-                        </button>
-                        <button class="btn-action btn-fail" data-id="${item.id}" title="Registrar Venta Perdida / Motivo">
-                            <i class="fas fa-times-circle"></i>
-                        </button>
-                        <button class="btn-action btn-edit" data-id="${item.id}" title="Editar paciente">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn-action btn-delete" data-id="${item.id}" title="Eliminar paciente">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
+                        <div class="action-row">
+                            <button class="btn-action btn-renew" data-id="${item.id}" title="Marcar como Resurtido (Reiniciar contador)">
+                                <i class="fas fa-check-circle"></i> Resurtido
+                            </button>
+                            <button class="btn-action btn-fail" data-id="${item.id}" title="Registrar Venta Perdida / Motivo">
+                                <i class="fas fa-times-circle"></i> Incidencia
+                            </button>
+                        </div>
+                        <div class="action-row secondary">
+                            <button class="btn-action btn-edit" data-id="${item.id}" title="Editar paciente">
+                                <i class="fas fa-edit"></i> Editar
+                            </button>
+                            <button class="btn-action btn-delete" data-id="${item.id}" title="Eliminar paciente">
+                                <i class="fas fa-trash-alt"></i> Eliminar
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
