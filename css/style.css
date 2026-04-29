@@ -299,27 +299,25 @@ body {
 
 .btn-action {
     flex: 1;
-    padding: 10px 12px;
-    border-radius: 12px;
+    padding: 15px 20px;
+    border-radius: 16px;
     border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    font-weight: 600;
+    gap: 10px;
+    font-weight: 700;
     transition: 0.3s;
     text-decoration: none;
-    font-size: 0.85rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
 
 .btn-whatsapp { 
     background: #25d366; 
     color: white; 
-    padding: 12px;
-    font-size: 1rem;
 }
-.btn-whatsapp:hover { background: #128c7e; transform: translateY(-2px); }
+.btn-whatsapp:hover { background: #128c7e; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(37, 211, 102, 0.3); }
 
 .btn-renew { background: #e0e7ff; color: var(--primary); }
 .btn-renew:hover { background: #c7d2fe; }
@@ -353,7 +351,7 @@ body {
 }
 
 .patient-phone {
-    font-size: 0.8rem;
+    font-size: 1rem;
     color: var(--text-muted);
     margin-top: 4px;
 }
@@ -361,17 +359,18 @@ body {
 .treatments-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 15px;
 }
 
 .treatment-item {
-    background: #f8fafc;
-    padding: 10px;
+    background: white;
+    padding: 15px;
     border-radius: 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border: 1px solid #edf2f7;
+    border: 2px solid #f1f5f9;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
 .t-info {
@@ -380,46 +379,47 @@ body {
 }
 
 .t-info strong {
-    font-size: 0.9rem;
+    font-size: 1.1rem;
     color: var(--text-main);
 }
 
 .t-info span {
-    font-size: 0.75rem;
+    font-size: 0.9rem;
     color: var(--text-muted);
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 8px;
+    margin-top: 4px;
 }
 
 .t-btns {
     display: flex;
-    gap: 5px;
+    gap: 10px;
 }
 
 .btn-t-action {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    width: 45px;
+    height: 45px;
+    border-radius: 12px;
     border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem;
+    font-size: 1.2rem;
     transition: 0.3s;
 }
 
-.btn-t-action.btn-renew { background: #dcfce7; color: #16a34a; }
-.btn-t-action.btn-fail { background: #fff7ed; color: #ea580c; }
-.btn-t-action.btn-edit { background: #f1f5f9; color: #64748b; }
+.btn-t-action.btn-renew { background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
+.btn-t-action.btn-fail { background: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; }
+.btn-t-action.btn-edit { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
 
-.btn-t-action:hover { transform: scale(1.1); filter: brightness(0.9); }
+.btn-t-action:hover { transform: scale(1.1); filter: brightness(0.95); }
 
 .t-badge {
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.65rem;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
     font-weight: 700;
 }
 .t-badge.urgent { background: #fee2e2; color: #ef4444; }
@@ -430,7 +430,11 @@ body {
     color: var(--primary);
     width: 100%;
 }
-.btn-renew-all:hover { background: #c7d2fe; }
+.btn-renew-all:hover { 
+    background: #c7d2fe; 
+    transform: translateY(-2px); 
+    box-shadow: 0 6px 12px rgba(99, 102, 241, 0.2); 
+}
 
 /* Login Overlay */
 .login-overlay {

@@ -350,13 +350,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 return `
                     <div class="treatment-item ${t.last_action === 'venta_fallida' ? 'has-fail' : ''}">
                         <div class="t-info">
-                            <strong>${t.medication_name}</strong>
-                            <span>Fin: ${formatDate(t.estimated_end_date)} ${tStatus}</span>
+                            <strong style="font-size: 1.1rem;">${t.medication_name}</strong>
+                            <span>Termina: ${formatDate(t.estimated_end_date)} ${tStatus}</span>
                         </div>
                         <div class="t-btns">
-                            <button class="btn-t-action btn-renew" data-id="${t.id}" title="Resurtido"><i class="fas fa-check"></i></button>
-                            <button class="btn-t-action btn-fail" data-id="${t.id}" title="No surtido"><i class="fas fa-times"></i></button>
-                            <button class="btn-t-action btn-edit" data-id="${t.id}" title="Editar"><i class="fas fa-edit"></i></button>
+                            <button class="btn-t-action btn-renew" data-id="${t.id}" title="Compró este producto">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="btn-t-action btn-fail" data-id="${t.id}" title="No compró este">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <button class="btn-t-action btn-edit" data-id="${t.id}" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
                         </div>
                     </div>
                 `;
@@ -366,23 +372,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="agenda-card unified">
                     <div class="card-header">
                         <div class="header-main">
-                            <span class="patient-name">${group.full_name}</span>
-                            <span class="patient-phone"><i class="fas fa-phone"></i> ${group.phone}</span>
+                            <span class="patient-name" style="font-size: 1.4rem;">${group.full_name}</span>
+                            <span class="patient-phone"><i class="fas fa-phone"></i> Llamar al: <strong>${group.phone}</strong></span>
                         </div>
-                        <span class="status-badge ${statusClass}">${statusText}</span>
+                        <span class="status-badge ${statusClass}" style="padding: 8px 15px; font-size: 0.9rem;">${statusText}</span>
                     </div>
+                    
                     <div class="card-body">
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px; font-weight: 600;">LISTA DE MEDICAMENTOS:</p>
                         <div class="treatments-list">
                             ${treatmentsHtml}
                         </div>
                     </div>
+
                     <div class="card-actions">
-                        <a href="${whatsappUrl}" target="_blank" class="btn-action btn-whatsapp">
-                            <i class="fab fa-whatsapp"></i> WhatsApp Unificado
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px; font-weight: 600;">ACCIONES:</p>
+                        <a href="${whatsappUrl}" target="_blank" class="btn-action btn-whatsapp" style="height: 55px; font-size: 1.1rem;">
+                            <i class="fab fa-whatsapp"></i> 1. Avisar por WhatsApp
                         </a>
                         <div class="action-row">
-                            <button class="btn-action btn-renew-all" data-ids='${JSON.stringify(group.treatments.map(t => t.id))}' data-name="${group.full_name}">
-                                <i class="fas fa-check-double"></i> Resurtir Todo
+                            <button class="btn-action btn-renew-all" data-ids='${JSON.stringify(group.treatments.map(t => t.id))}' data-name="${group.full_name}" style="height: 50px;">
+                                <i class="fas fa-check-double"></i> 2. Marcar TODO como Vendido
                             </button>
                         </div>
                     </div>
