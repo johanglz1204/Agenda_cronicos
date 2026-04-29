@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Elements
     const navLinks = document.querySelectorAll('.nav-links li');
     const tabContents = document.querySelectorAll('.tab-content');
-    const agendaList = document.getElementById('agenda-list');
+    const agendaCards = document.getElementById('agenda-cards');
     const registrationForm = document.getElementById('registration-form');
     const pendingCount = document.getElementById('pending-count');
     const totalPatientsEl = document.getElementById('total-patients');
@@ -214,7 +214,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Database Logic (Firebase) ---
 
     async function loadAgenda() {
-        agendaList.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>Conectando con la base de datos...</p></div>';
+        if (!agendaCards) return;
+        agendaCards.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>Conectando con la base de datos...</p></div>';
         
         try {
             const todayISO = getTodayISO();
@@ -239,8 +240,9 @@ document.addEventListener('DOMContentLoaded', () => {
             currentAgendaData = [];
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
-                data.id = doc.id; // Guardamos el ID para poder editar
-                if (data.active === true) {
+                data.id = doc.id; 
+                // Consideramos activos si no tienen el campo o si es true
+                if (data.active !== false) {
                     currentAgendaData.push(data);
                 }
             });
@@ -285,7 +287,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error(error);
             showToast('Error al cargar datos. ¿Configuraste Firebase?', 'error');
-            agendaList.innerHTML = '<p class="error-msg">Error de conexión. Asegúrate de configurar tus llaves de Firebase en js/main.js.</p>';
+            if (agendaCards) {
+                agendaCards.innerHTML = '<p class="error-msg">Error de conexión. Asegúrate de configurar tus llaves de Firebase en js/main.js.</p>';
+            }
         }
     }
 
