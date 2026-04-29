@@ -13,6 +13,12 @@ const firebaseConfig = {
     measurementId: "G-FYQEPSLEHV"
 };
 
+// Default Templates
+const defaultTemplates = {
+    reminder: "¡Hola {nombre}! 👋\nLe escribimos de *Farmacias Madero* 💊 para recordarle el resurtido de su medicamento: *{medicamento}* 💊.\n\n¿Desea que se lo apartemos o se lo enviemos a domicilio? 👆👆",
+    birthday: "¡Hola {nombre}! 👋\nLe escribimos de *Farmacias Madero* para desearle un muy feliz cumpleaños 🎂🎁 Esperamos que pase un excelente día."
+};
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -33,7 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentAgendaData = [];
     let editModeId = null;
-    let simulatedDate = null; // Para el modo desarrollador
+    let simulatedDate = null; 
+    let whatsappTemplates = { ...defaultTemplates };
 
     // --- Helper para Fechas (Soporta simulación) ---
     function getTodayDate() {
@@ -117,8 +124,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sessionStorage.getItem('role') === 'admin') {
             navDevtools.style.display = 'flex';
             document.getElementById('btn-export-csv').style.display = 'block';
+            document.getElementById('stat-monthly-sales').style.display = 'flex';
+            loadTemplates(); // Solo admin puede cargar/ver plantillas
         }
-        loadAgenda(); // Cargar agenda al entrar
+        loadAgenda(); 
     }
 
     // --- Logout Logic ---
@@ -244,9 +253,34 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             renderAgenda(currentAgendaData, todayISO);
-            checkBirthdays(currentAgendaData); // Verificar cumpleaños
-            pendingCount.innerText = currentAgendaData.filter(i => calculateDaysDiff(i.estimated_end_date) <= 3).length;
+            checkBirthdays(currentAgendaData); 
+            
+            const urgentCount = currentAgendaData.filter(i => calculateDaysDiff(i.estimated_end_date) <= 3).length;
+            pendingCount.innerText = urgentCount;
             totalPatientsEl.innerText = currentAgendaData.length;
+
+            // Actualizar Badge de Agenda
+            const agendaBadge = document.getElementById('agenda-badge');
+            if (urgentCount > 0) {
+                agendaBadge.innerText = urgentCount;
+                agendaBadge.style.display = 'inline-block';
+            } else {
+                agendaBadge.style.display = 'none';
+            }
+
+            // Calcular Ventas del Mes (Admin)
+            if (sessionStorage.getItem('role') === 'admin') {
+                const now = getTodayDate();
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                
+                const monthlySales = currentAgendaData.filter(item => {
+                    if (!item.last_renewed_at) return false;
+                    const renewedDate = item.last_renewed_at.toDate ? item.last_renewed_at.toDate() : new Date(item.last_renewed_at);
+                    return renewedDate >= startOfMonth;
+                }).length;
+                
+                document.getElementById('monthly-sales-count').innerText = monthlySales;
+            }
 
         } catch (error) {
             console.error(error);
@@ -272,13 +306,26 @@ document.addEventListener('DOMContentLoaded', () => {
             const ePill  = String.fromCodePoint(0x1F48A);
             const ePoint = String.fromCodePoint(0x1F446);
 
-            const message = `\u00A1Hola ${item.full_name}! ${eWave}${eSmile}\nLe escribimos de *Farmacias Madero* ${ePill} para recordarle el resurtido de su medicamento: *${item.medication_name}* ${ePill}.\n\n\u00BFDesea que se lo apartemos o se lo enviemos a domicilio? ${ePoint}${ePoint}`;
+            // Construcción del mensaje usando plantillas
+            const message = whatsappTemplates.reminder
+                .replace(/{nombre}/g, item.full_name)
+                .replace(/{medicamento}/g, item.medication_name);
 
             const phone = item.phone.replace(/\D/g, '');
             const whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
 
+            // Renderizado de historial (últimas 3)
+            let historyHtml = '';
+            if (item.history && item.history.length > 0) {
+                historyHtml = `<div class="mini-history">
+                    ${item.history.slice(-3).reverse().map(h => `
+                        <span><i class="fas fa-history"></i> ${h.date}: ${h.action === 'surtido' ? '✅' : '❌'} ${h.note || ''}</span>
+                    `).join('')}
+                </div>`;
+            }
+
             return `
-                <div class="agenda-card">
+                <div class="agenda-card ${item.last_action === 'venta_fallida' ? 'has-fail' : ''}">
                     <div class="card-header">
                         <span class="patient-name">${item.full_name}</span>
                         <span class="status-badge ${statusClass}">${statusText}</span>
@@ -288,6 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p><i class="fas fa-calendar-alt"></i> Fin: ${formatDate(item.estimated_end_date)}</p>
                         <p><i class="fas fa-phone"></i> ${item.phone}</p>
                         ${item.latest_fail_reason ? `<p class="fail-note"><i class="fas fa-exclamation-triangle"></i> Última falla: ${item.latest_fail_reason}</p>` : ''}
+                        ${historyHtml}
                     </div>
                     <div class="card-actions">
                         <a href="${whatsappUrl}" target="_blank" class="btn-action btn-whatsapp" title="Contactar por WhatsApp">
@@ -373,13 +421,26 @@ document.addEventListener('DOMContentLoaded', () => {
             const contactDate = new Date(endDate);
             contactDate.setDate(endDate.getDate() - 3);
 
+            const historyEntry = {
+                action: 'surtido',
+                date: today.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
+                user: sessionStorage.getItem('username'),
+                note: 'Compra completada'
+            };
+
+            const history = item.history || [];
+            history.push(historyEntry);
+
             try {
                 await updateDoc(doc(db, "treatments", id), {
                     start_date: startDate,
                     estimated_end_date: endDate.toISOString().split('T')[0],
                     next_contact_date: contactDate.toISOString().split('T')[0],
                     last_renewed_at: serverTimestamp(),
-                    last_handled_by: sessionStorage.getItem('username')
+                    last_handled_by: sessionStorage.getItem('username'),
+                    last_action: 'surtido',
+                    history: history,
+                    latest_fail_reason: null // Limpiamos falla anterior al surtir
                 });
                 showToast('¡Contador reiniciado con éxito!', 'success');
                 loadAgenda();
@@ -407,6 +468,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const contactDate = new Date(endDate);
             contactDate.setDate(endDate.getDate() - 3);
 
+            const historyEntry = {
+                action: 'no_surtido',
+                date: today.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
+                user: sessionStorage.getItem('username'),
+                note: reason.trim()
+            };
+
+            const history = item.history || [];
+            history.push(historyEntry);
+
             try {
                 await updateDoc(doc(db, "treatments", id), {
                     start_date: startDate, // Reiniciamos para que no sature la agenda este mes
@@ -415,7 +486,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     latest_fail_reason: reason.trim(),
                     latest_fail_date: startDate,
                     last_action: 'venta_fallida',
-                    last_handled_by: sessionStorage.getItem('username')
+                    last_handled_by: sessionStorage.getItem('username'),
+                    history: history
                 });
                 showToast('Motivo registrado. El recordatorio se movió al siguiente ciclo.', 'success');
                 loadAgenda();
@@ -566,7 +638,9 @@ document.addEventListener('DOMContentLoaded', () => {
             birthdaysList.innerHTML = upcomingBirthdays.map(p => {
                 const daysText = p.daysToBday === 0 ? '¡HOY!' : `en ${p.daysToBday} días`;
                 const iconClass = p.daysToBday === 0 ? 'fa-birthday-cake' : 'fa-gift';
-                const message = `¡Hola ${p.full_name}! 👋 Le escribimos de *Farmacias Madero* para desearle un muy feliz cumpleaños 🎂🎁 Esperamos que pase un excelente día.`;
+                const message = whatsappTemplates.birthday
+                    .replace(/{nombre}/g, p.full_name);
+
                 const whatsappUrl = `https://api.whatsapp.com/send?phone=${p.phone.replace(/\D/g, '')}&text=${encodeURIComponent(message)}`;
 
                 return `
@@ -656,6 +730,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             usersList.innerHTML = querySnapshot.docs.map(doc => {
                 const data = doc.data();
+                if (data.username === 'admin') return ''; // No borrar al admin
                 return `
                     <div class="user-item">
                         <div class="user-info">
@@ -731,6 +806,45 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.removeChild(link);
             
             showToast('Reporte generado con éxito', 'success');
+        });
+    }
+
+    // --- Gestión de Plantillas ---
+    async function loadTemplates() {
+        try {
+            const docSnap = await getDocs(collection(db, "settings"));
+            const templateDoc = docSnap.docs.find(d => d.id === 'whatsapp_templates');
+            
+            if (templateDoc) {
+                whatsappTemplates = templateDoc.data();
+            }
+            
+            document.getElementById('template-reminder').value = whatsappTemplates.reminder;
+            document.getElementById('template-birthday').value = whatsappTemplates.birthday;
+        } catch (error) {
+            console.error("Error cargando plantillas:", error);
+        }
+    }
+
+    const btnSaveTemplates = document.getElementById('btn-save-templates');
+    if (btnSaveTemplates) {
+        btnSaveTemplates.addEventListener('click', async () => {
+            const reminder = document.getElementById('template-reminder').value;
+            const birthday = document.getElementById('template-birthday').value;
+
+            try {
+                // Usamos setDoc para asegurar que el ID sea fijo
+                const { setDoc } = await import("https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js");
+                await setDoc(doc(db, "settings", "whatsapp_templates"), {
+                    reminder,
+                    birthday
+                });
+                whatsappTemplates = { reminder, birthday };
+                showToast('Plantillas actualizadas', 'success');
+            } catch (error) {
+                console.error(error);
+                showToast('Error al guardar plantillas', 'error');
+            }
         });
     }
 

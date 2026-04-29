@@ -339,8 +339,26 @@ body {
     background: #fff7ed;
     color: #c2410c;
     border-radius: 8px;
-    font-size: 0.85rem !important;
+    font-size: 0.8rem !important;
     border-left: 3px solid #f97316;
+}
+
+.mini-history {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #eee;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mini-history span {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.agenda-card.has-fail {
+    border-left: 4px solid #f97316;
 }
 
 /* Login Overlay */
