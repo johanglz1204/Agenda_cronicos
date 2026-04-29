@@ -57,6 +57,9 @@
                 <li data-tab="medications">
                     <a href="#"><i class="fas fa-pills"></i> <span>Medicamentos</span></a>
                 </li>
+                <li data-tab="birthdays" id="nav-birthdays">
+                    <a href="#"><i class="fas fa-birthday-cake"></i> <span>Cumpleaños</span> <span class="badge" id="bday-badge" style="display:none;">0</span></a>
+                </li>
                 <!-- Solo visible para admin -->
                 <li data-tab="devtools" id="nav-devtools" style="display:none;">
                     <a href="#"><i class="fas fa-wrench"></i> <span>Modo Dev</span></a>
@@ -109,9 +112,6 @@
                     </div>
                 </div>
 
-                <div id="birthday-alerts" class="birthday-container" style="display: none;">
-                    <!-- Los avisos de cumpleaños aparecerán aquí -->
-                </div>
 
                 <div class="data-table-container">
                     <div class="table-header">
@@ -189,6 +189,27 @@
                             <i class="fas fa-save"></i> Guardar Registro
                         </button>
                     </form>
+                </div>
+            </section>
+
+            <!-- Birthdays View -->
+            <section id="tab-birthdays" class="tab-content">
+                <div class="content-header">
+                    <h1>Próximos Cumpleaños</h1>
+                    <p>Pacientes que cumplen años en los próximos días.</p>
+                </div>
+
+                <div class="data-table-container">
+                    <div class="table-header">
+                        <h2>Calendario de Celebraciones</h2>
+                    </div>
+                    <div id="birthdays-list" class="agenda-cards">
+                        <!-- Los cumpleaños aparecerán aquí -->
+                        <div class="loading-state">
+                            <i class="fas fa-gift"></i>
+                            <p>No hay cumpleaños próximos en los siguientes 7 días.</p>
+                        </div>
+                    </div>
                 </div>
             </section>
 

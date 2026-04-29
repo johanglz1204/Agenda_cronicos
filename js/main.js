@@ -149,6 +149,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 searchContainer.style.visibility = 'visible';
                 searchInput.value = '';
                 loadAgenda();
+            } else if (tabId === 'birthdays') {
+                searchContainer.style.visibility = 'hidden';
+                checkBirthdays(currentAgendaData);
             } else if (tabId === 'devtools') {
                 searchContainer.style.visibility = 'hidden';
                 loadUsers(); // Cargar usuarios al entrar a Modo Dev
@@ -401,7 +404,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Lógica de Cumpleaños ---
     function checkBirthdays(patients) {
-        const birthdayAlerts = document.getElementById('birthday-alerts');
+        const birthdaysList = document.getElementById('birthdays-list');
+        const bdayBadge = document.getElementById('bday-badge');
         const today = getTodayDate();
         const upcomingBirthdays = [];
 
@@ -411,7 +415,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const bDate = new Date(p.birth_date + "T12:00:00");
             const thisYearBday = new Date(today.getFullYear(), bDate.getMonth(), bDate.getDate(), 12, 0, 0);
             
-            // Si el cumpleaños ya pasó este año, probar el próximo (para el caso de fin de año)
             if (thisYearBday < today && (today.getMonth() === 11 && bDate.getMonth() === 0)) {
                 thisYearBday.setFullYear(today.getFullYear() + 1);
             }
@@ -419,34 +422,51 @@ document.addEventListener('DOMContentLoaded', () => {
             const diffTime = thisYearBday - today;
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-            if (diffDays >= 0 && diffDays <= 3) {
+            // Mostramos los próximos 7 días en la pestaña dedicada
+            if (diffDays >= 0 && diffDays <= 7) {
                 upcomingBirthdays.push({ ...p, daysToBday: diffDays });
             }
         });
 
+        // Ordenar por cercanía
+        upcomingBirthdays.sort((a, b) => a.daysToBday - b.daysToBday);
+
+        // Actualizar Badge (solo los de los próximos 3 días)
+        const urgentCount = upcomingBirthdays.filter(p => p.daysToBday <= 3).length;
+        if (urgentCount > 0) {
+            bdayBadge.innerText = urgentCount;
+            bdayBadge.style.display = 'inline-block';
+        } else {
+            bdayBadge.style.display = 'none';
+        }
+
         if (upcomingBirthdays.length > 0) {
-            birthdayAlerts.style.display = 'block';
-            birthdayAlerts.innerHTML = upcomingBirthdays.map(p => {
-                const daysText = p.daysToBday === 0 ? '¡ES HOY!' : `en ${p.daysToBday} días`;
+            birthdaysList.innerHTML = upcomingBirthdays.map(p => {
+                const daysText = p.daysToBday === 0 ? '¡HOY!' : `en ${p.daysToBday} días`;
                 const iconClass = p.daysToBday === 0 ? 'fa-birthday-cake' : 'fa-gift';
                 const message = `¡Hola ${p.full_name}! 👋 Le escribimos de *Farmacias Madero* para desearle un muy feliz cumpleaños 🎂🎁 Esperamos que pase un excelente día.`;
                 const whatsappUrl = `https://api.whatsapp.com/send?phone=${p.phone.replace(/\D/g, '')}&text=${encodeURIComponent(message)}`;
 
                 return `
-                    <div class="birthday-card ${p.daysToBday === 0 ? 'is-today' : ''}">
-                        <div class="b-icon"><i class="fas ${iconClass}"></i></div>
-                        <div class="b-info">
-                            <strong>${p.full_name}</strong>
-                            <span>Cumpleaños ${daysText}</span>
+                    <div class="agenda-card ${p.daysToBday === 0 ? 'is-today-bday' : ''}">
+                        <div class="card-header">
+                            <span class="patient-name"><i class="fas ${iconClass}"></i> ${p.full_name}</span>
+                            <span class="status-badge ${p.daysToBday === 0 ? 'today' : 'soon'}">${daysText}</span>
                         </div>
-                        <a href="${whatsappUrl}" target="_blank" class="btn-bday-wa">
-                            <i class="fab fa-whatsapp"></i> Felicitar
-                        </a>
+                        <div class="card-body">
+                            <p><i class="fas fa-calendar-day"></i> Fecha: ${formatDate(p.birth_date)}</p>
+                            <p><i class="fas fa-phone"></i> ${p.phone}</p>
+                        </div>
+                        <div class="card-actions">
+                            <a href="${whatsappUrl}" target="_blank" class="btn-action btn-whatsapp">
+                                <i class="fab fa-whatsapp"></i> Felicitar
+                            </a>
+                        </div>
                     </div>
                 `;
             }).join('');
         } else {
-            birthdayAlerts.style.display = 'none';
+            birthdaysList.innerHTML = '<div class="loading-state"><i class="fas fa-gift" style="color: var(--primary); opacity: 0.5;"></i><p>No hay cumpleaños en los próximos 7 días.</p></div>';
         }
     }
 
