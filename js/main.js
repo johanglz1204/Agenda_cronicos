@@ -378,7 +378,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     start_date: startDate,
                     estimated_end_date: endDate.toISOString().split('T')[0],
                     next_contact_date: contactDate.toISOString().split('T')[0],
-                    last_renewed_at: serverTimestamp()
+                    last_renewed_at: serverTimestamp(),
+                    last_handled_by: sessionStorage.getItem('username')
                 });
                 showToast('¡Contador reiniciado con éxito!', 'success');
                 loadAgenda();
@@ -413,7 +414,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     next_contact_date: contactDate.toISOString().split('T')[0],
                     latest_fail_reason: reason.trim(),
                     latest_fail_date: startDate,
-                    last_action: 'venta_fallida'
+                    last_action: 'venta_fallida',
+                    last_handled_by: sessionStorage.getItem('username')
                 });
                 showToast('Motivo registrado. El recordatorio se movió al siguiente ciclo.', 'success');
                 loadAgenda();
@@ -694,7 +696,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const headers = ["Paciente", "Telefono", "Medicamento", "Estado", "Motivo No Surtido", "Fecha Ultima Accion"];
+            const headers = ["Paciente", "Telefono", "Medicamento", "Estado", "Motivo No Surtido", "Fecha Ultima Accion", "Atendido Por"];
             const csvRows = [headers.join(",")];
 
             currentAgendaData.forEach(item => {
@@ -711,7 +713,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     `"${item.medication_name}"`,
                     `"${status}"`,
                     `"${item.latest_fail_reason || ''}"`,
-                    `"${item.start_date}"` // Usamos start_date como referencia de la última vez que se activó el contador
+                    `"${item.start_date}"`,
+                    `"${item.last_handled_by || item.created_by || 'Sistema'}"`
                 ];
                 csvRows.push(row.join(","));
             });
