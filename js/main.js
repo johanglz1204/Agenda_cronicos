@@ -161,9 +161,35 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- Buscador ---
+    // --- Buscador y Filtros ---
     searchInput.addEventListener('input', (e) => {
         const term = e.target.value.toLowerCase();
+        applyFilters(term);
+    });
+
+    const statPending = document.getElementById('stat-pending');
+    const statTotal = document.getElementById('stat-total');
+
+    statPending.addEventListener('click', () => {
+        const pending = currentAgendaData.filter(i => calculateDaysDiff(i.estimated_end_date) <= 3);
+        const todayISO = getTodayISO();
+        renderAgenda(pending, todayISO);
+        
+        statPending.classList.add('active-filter');
+        statTotal.classList.remove('active-filter');
+        showToast('Mostrando solo pendientes próximos', 'info');
+    });
+
+    statTotal.addEventListener('click', () => {
+        const todayISO = getTodayISO();
+        renderAgenda(currentAgendaData, todayISO);
+        
+        statTotal.classList.add('active-filter');
+        statPending.classList.remove('active-filter');
+        showToast('Mostrando todos los pacientes', 'info');
+    });
+
+    function applyFilters(term = '') {
         const filtered = currentAgendaData.filter(item => 
             item.full_name.toLowerCase().includes(term) || 
             item.medication_name.toLowerCase().includes(term) ||
@@ -173,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const todayISO = getTodayISO();
         renderAgenda(filtered, todayISO);
         pendingCount.innerText = filtered.filter(i => calculateDaysDiff(i.estimated_end_date) <= 3).length;
-    });
+    }
 
     // --- Database Logic (Firebase) ---
 
