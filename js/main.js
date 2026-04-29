@@ -290,71 +290,95 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderAgenda(items, todayISO) {
+        const agendaCards = document.getElementById('agenda-cards');
+        
         if (items.length === 0) {
-            agendaList.innerHTML = '<div class="loading-state"><i class="fas fa-check-circle" style="color: var(--success)"></i><p>Todo al día. No hay resurtidos pendientes.</p></div>';
+            agendaCards.innerHTML = '<div class="loading-state"><i class="fas fa-calendar-times" style="color: var(--primary); opacity: 0.5;"></i><p>No hay pacientes para mostrar con los filtros actuales.</p></div>';
             return;
         }
 
-        agendaList.innerHTML = items.map(item => {
-            const daysLeft = calculateDaysDiff(item.estimated_end_date);
-            const statusClass = item.next_contact_date <= todayISO ? 'today' : 'soon';
-            const statusText = daysLeft <= 0 ? 'AGOTADO HOY' : `Faltan ${daysLeft} días`;
+        // --- Agrupación por Paciente (Teléfono) ---
+        const grouped = items.reduce((acc, item) => {
+            const key = item.phone;
+            if (!acc[key]) {
+                acc[key] = {
+                    full_name: item.full_name,
+                    phone: item.phone,
+                    treatments: []
+                };
+            }
+            acc[key].treatments.push(item);
+            return acc;
+        }, {});
 
-            // Construcción del mensaje con escapes Unicode para máxima compatibilidad de codificación
-            const eWave  = String.fromCodePoint(0x1F44B);
-            const eSmile = String.fromCodePoint(0x1F60A);
-            const ePill  = String.fromCodePoint(0x1F48A);
-            const ePoint = String.fromCodePoint(0x1F446);
+        agendaCards.innerHTML = Object.values(grouped).map(group => {
+            // Determinar urgencia máxima del grupo
+            const mostUrgent = group.treatments.reduce((prev, curr) => {
+                const prevDiff = calculateDaysDiff(prev.estimated_end_date);
+                const currDiff = calculateDaysDiff(curr.estimated_end_date);
+                return currDiff < prevDiff ? curr : prev;
+            });
 
-            // Construcción del mensaje usando plantillas
+            const diff = calculateDaysDiff(mostUrgent.estimated_end_date);
+            let statusText = `Faltan ${diff} días`;
+            let statusClass = 'soon';
+            if (diff <= 0) { statusText = 'VENCIDO'; statusClass = 'urgent'; }
+            else if (diff <= 3) { statusText = 'PRÓXIMO'; statusClass = 'alert'; }
+
+            // Mensaje de WhatsApp Unificado (solo los que vencen en 3 días o menos)
+            const dueTreatments = group.treatments.filter(t => calculateDaysDiff(t.estimated_end_date) <= 7);
+            const medNames = dueTreatments.map(t => `*${t.medication_name}*`).join(', ');
+            
             const message = whatsappTemplates.reminder
-                .replace(/{nombre}/g, item.full_name)
-                .replace(/{medicamento}/g, item.medication_name);
+                .replace(/{nombre}/g, group.full_name)
+                .replace(/{medicamento}/g, medNames);
 
-            const phone = item.phone.replace(/\D/g, '');
+            const phone = group.phone.replace(/\D/g, '');
             const whatsappUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
 
-            // Renderizado de historial (últimas 3)
-            let historyHtml = '';
-            if (item.history && item.history.length > 0) {
-                historyHtml = `<div class="mini-history">
-                    ${item.history.slice(-3).reverse().map(h => `
-                        <span><i class="fas fa-history"></i> ${h.date}: ${h.action === 'surtido' ? '✅' : '❌'} ${h.note || ''}</span>
-                    `).join('')}
-                </div>`;
-            }
+            // Renderizar lista de medicamentos
+            const treatmentsHtml = group.treatments.map(t => {
+                const tDiff = calculateDaysDiff(t.estimated_end_date);
+                let tStatus = '';
+                if (tDiff <= 0) tStatus = '<span class="t-badge urgent">Vencido</span>';
+                else if (tDiff <= 3) tStatus = '<span class="t-badge alert">Próximo</span>';
+
+                return `
+                    <div class="treatment-item ${t.last_action === 'venta_fallida' ? 'has-fail' : ''}">
+                        <div class="t-info">
+                            <strong>${t.medication_name}</strong>
+                            <span>Fin: ${formatDate(t.estimated_end_date)} ${tStatus}</span>
+                        </div>
+                        <div class="t-btns">
+                            <button class="btn-t-action btn-renew" data-id="${t.id}" title="Resurtido"><i class="fas fa-check"></i></button>
+                            <button class="btn-t-action btn-fail" data-id="${t.id}" title="No surtido"><i class="fas fa-times"></i></button>
+                            <button class="btn-t-action btn-edit" data-id="${t.id}" title="Editar"><i class="fas fa-edit"></i></button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
 
             return `
-                <div class="agenda-card ${item.last_action === 'venta_fallida' ? 'has-fail' : ''}">
+                <div class="agenda-card unified">
                     <div class="card-header">
-                        <span class="patient-name">${item.full_name}</span>
+                        <div class="header-main">
+                            <span class="patient-name">${group.full_name}</span>
+                            <span class="patient-phone"><i class="fas fa-phone"></i> ${group.phone}</span>
+                        </div>
                         <span class="status-badge ${statusClass}">${statusText}</span>
                     </div>
                     <div class="card-body">
-                        <p><i class="fas fa-pills"></i> ${item.medication_name}</p>
-                        <p><i class="fas fa-calendar-alt"></i> Fin: ${formatDate(item.estimated_end_date)}</p>
-                        <p><i class="fas fa-phone"></i> ${item.phone}</p>
-                        ${item.latest_fail_reason ? `<p class="fail-note"><i class="fas fa-exclamation-triangle"></i> Última falla: ${item.latest_fail_reason}</p>` : ''}
-                        ${historyHtml}
+                        <div class="treatments-list">
+                            ${treatmentsHtml}
+                        </div>
                     </div>
                     <div class="card-actions">
-                        <a href="${whatsappUrl}" target="_blank" class="btn-action btn-whatsapp" title="Contactar por WhatsApp">
-                            <i class="fab fa-whatsapp"></i> Enviar Mensaje de WhatsApp
+                        <a href="${whatsappUrl}" target="_blank" class="btn-action btn-whatsapp">
+                            <i class="fab fa-whatsapp"></i> WhatsApp Unificado
                         </a>
                         <div class="action-row">
-                            <button class="btn-action btn-renew" data-id="${item.id}" title="Marcar como Resurtido (Reiniciar contador)">
-                                <i class="fas fa-check-circle"></i> Resurtido
-                            </button>
-                            <button class="btn-action btn-fail" data-id="${item.id}" title="Registrar Venta Perdida / Motivo">
-                                <i class="fas fa-times-circle"></i> No surtido
-                            </button>
-                        </div>
-                        <div class="action-row secondary">
-                            <button class="btn-action btn-edit" data-id="${item.id}" title="Editar paciente">
-                                <i class="fas fa-edit"></i> Editar
-                            </button>
-                            <button class="btn-action btn-delete" data-id="${item.id}" title="Eliminar paciente">
-                                <i class="fas fa-trash-alt"></i> Eliminar
+                            <button class="btn-action btn-renew-all" data-ids='${JSON.stringify(group.treatments.map(t => t.id))}' data-name="${group.full_name}">
+                                <i class="fas fa-check-double"></i> Resurtir Todo
                             </button>
                         </div>
                     </div>
@@ -362,15 +386,12 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }).join('');
 
-        // Añadir eventos a los botones de editar
-        document.querySelectorAll('.btn-edit').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const id = e.currentTarget.getAttribute('data-id');
-                openEditMode(id);
-            });
-        });
+        // Re-asignar eventos
+        attachAgendaEvents();
+    }
 
-        // Añadir eventos a los botones de renovar (resurtido)
+    function attachAgendaEvents() {
+        // Renovar individual
         document.querySelectorAll('.btn-renew').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const id = e.currentTarget.getAttribute('data-id');
@@ -378,7 +399,16 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Añadir eventos a los botones de venta fallida
+        // Renovar TODO el grupo
+        document.querySelectorAll('.btn-renew-all').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const ids = JSON.parse(e.currentTarget.getAttribute('data-ids'));
+                const name = e.currentTarget.getAttribute('data-name');
+                renewAllTreatments(ids, name);
+            });
+        });
+
+        // Venta fallida individual
         document.querySelectorAll('.btn-fail').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const id = e.currentTarget.getAttribute('data-id');
@@ -386,24 +416,16 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Añadir eventos a los botones de eliminar
-        document.querySelectorAll('.btn-delete').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
+        // Editar individual
+        document.querySelectorAll('.btn-edit').forEach(btn => {
+            btn.addEventListener('click', (e) => {
                 const id = e.currentTarget.getAttribute('data-id');
-                const patientName = currentAgendaData.find(p => p.id === id)?.full_name || 'este paciente';
-                
-                if (confirm(`¿Estás seguro de que deseas eliminar permanentemente a ${patientName}?`)) {
-                    try {
-                        await deleteDoc(doc(db, "treatments", id));
-                        showToast('Registro eliminado correctamente', 'success');
-                        loadAgenda();
-                    } catch (error) {
-                        console.error("Error deleting document:", error);
-                        showToast('Error al eliminar el registro', 'error');
-                    }
-                }
+                openEditMode(id);
             });
         });
+
+        // Eliminar se manejará dentro de Editar o como botón global si es necesario
+        // Por ahora lo dejamos en la función de edición para no saturar la tarjeta unificada
     }
 
     async function renewTreatment(id) {
@@ -494,6 +516,54 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error(error);
                 showToast('Error al registrar el motivo', 'error');
+            }
+        }
+    }
+
+    async function renewAllTreatments(ids, name) {
+        if (confirm(`¿Confirmas que ${name} resurtió TODOS sus medicamentos? Se reiniciarán todos los contadores.`)) {
+            try {
+                const today = getTodayDate();
+                const startDate = today.toISOString().split('T')[0];
+                
+                // Promesas para actualizar todos en paralelo
+                const updates = ids.map(async (id) => {
+                    const item = currentAgendaData.find(i => i.id === id);
+                    if (!item) return;
+
+                    const recurrenceDays = item.recurrence || 30;
+                    const endDate = new Date(today);
+                    endDate.setDate(today.getDate() + recurrenceDays);
+                    const contactDate = new Date(endDate);
+                    contactDate.setDate(endDate.getDate() - 3);
+
+                    const historyEntry = {
+                        action: 'surtido',
+                        date: today.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
+                        user: sessionStorage.getItem('username'),
+                        note: 'Resurtido masivo'
+                    };
+                    const history = item.history || [];
+                    history.push(historyEntry);
+
+                    return updateDoc(doc(db, "treatments", id), {
+                        start_date: startDate,
+                        estimated_end_date: endDate.toISOString().split('T')[0],
+                        next_contact_date: contactDate.toISOString().split('T')[0],
+                        last_renewed_at: serverTimestamp(),
+                        last_handled_by: sessionStorage.getItem('username'),
+                        last_action: 'surtido',
+                        history: history,
+                        latest_fail_reason: null
+                    });
+                });
+
+                await Promise.all(updates);
+                showToast('¡Todos los medicamentos resurtidos!', 'success');
+                loadAgenda();
+            } catch (error) {
+                console.error(error);
+                showToast('Error en la actualización masiva', 'error');
             }
         }
     }
