@@ -214,6 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             renderAgenda(currentAgendaData, todayISO);
+            checkBirthdays(currentAgendaData); // Verificar cumpleaños
             pendingCount.innerText = currentAgendaData.filter(i => calculateDaysDiff(i.estimated_end_date) <= 3).length;
             totalPatientsEl.innerText = currentAgendaData.length;
 
@@ -310,6 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('full_name').value = item.full_name;
         document.getElementById('phone').value = item.phone;
         document.getElementById('email').value = item.email || '';
+        document.getElementById('birth_date').value = item.birth_date || '';
         document.getElementById('medication_name').value = item.medication_name;
         document.getElementById('recurrence').value = item.recurrence || '30';
         document.getElementById('start_date').value = item.start_date;
@@ -328,6 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const fullName = document.getElementById('full_name').value;
         const phone = document.getElementById('phone').value;
         const email = document.getElementById('email').value;
+        const birthDate = document.getElementById('birth_date').value;
         const medName = document.getElementById('medication_name').value;
         const recurrenceDays = parseInt(document.getElementById('recurrence').value);
         const startDate = document.getElementById('start_date').value;
@@ -344,6 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
             full_name: fullName,
             phone: phone,
             email: email,
+            birth_date: birthDate,
             medication_name: medName,
             recurrence: recurrenceDays,
             start_date: startDate,
@@ -393,6 +397,57 @@ document.addEventListener('DOMContentLoaded', () => {
     function formatDate(dateStr) {
         const d = new Date(dateStr + "T12:00:00");
         return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+    }
+
+    // --- Lógica de Cumpleaños ---
+    function checkBirthdays(patients) {
+        const birthdayAlerts = document.getElementById('birthday-alerts');
+        const today = getTodayDate();
+        const upcomingBirthdays = [];
+
+        patients.forEach(p => {
+            if (!p.birth_date) return;
+
+            const bDate = new Date(p.birth_date + "T12:00:00");
+            const thisYearBday = new Date(today.getFullYear(), bDate.getMonth(), bDate.getDate(), 12, 0, 0);
+            
+            // Si el cumpleaños ya pasó este año, probar el próximo (para el caso de fin de año)
+            if (thisYearBday < today && (today.getMonth() === 11 && bDate.getMonth() === 0)) {
+                thisYearBday.setFullYear(today.getFullYear() + 1);
+            }
+
+            const diffTime = thisYearBday - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays >= 0 && diffDays <= 3) {
+                upcomingBirthdays.push({ ...p, daysToBday: diffDays });
+            }
+        });
+
+        if (upcomingBirthdays.length > 0) {
+            birthdayAlerts.style.display = 'block';
+            birthdayAlerts.innerHTML = upcomingBirthdays.map(p => {
+                const daysText = p.daysToBday === 0 ? '¡ES HOY!' : `en ${p.daysToBday} días`;
+                const iconClass = p.daysToBday === 0 ? 'fa-birthday-cake' : 'fa-gift';
+                const message = `¡Hola ${p.full_name}! 👋 Le escribimos de *Farmacias Madero* para desearle un muy feliz cumpleaños 🎂🎁 Esperamos que pase un excelente día.`;
+                const whatsappUrl = `https://api.whatsapp.com/send?phone=${p.phone.replace(/\D/g, '')}&text=${encodeURIComponent(message)}`;
+
+                return `
+                    <div class="birthday-card ${p.daysToBday === 0 ? 'is-today' : ''}">
+                        <div class="b-icon"><i class="fas ${iconClass}"></i></div>
+                        <div class="b-info">
+                            <strong>${p.full_name}</strong>
+                            <span>Cumpleaños ${daysText}</span>
+                        </div>
+                        <a href="${whatsappUrl}" target="_blank" class="btn-bday-wa">
+                            <i class="fab fa-whatsapp"></i> Felicitar
+                        </a>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            birthdayAlerts.style.display = 'none';
+        }
     }
 
     // --- Modo Desarrollador ---
