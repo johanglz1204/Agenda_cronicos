@@ -314,8 +314,21 @@ body {
 .btn-renew { background: #e0e7ff; color: var(--primary); flex: 0 0 45px; }
 .btn-renew:hover { background: #c7d2fe; }
 
+.btn-fail { background: #fff7ed; color: #f97316; flex: 0 0 45px; }
+.btn-fail:hover { background: #ffedd5; }
+
 .btn-delete { background: #fee2e2; color: #ef4444; flex: 0 0 45px; }
 .btn-delete:hover { background: #fecaca; }
+
+.fail-note {
+    margin-top: 8px;
+    padding: 8px;
+    background: #fff7ed;
+    color: #c2410c;
+    border-radius: 8px;
+    font-size: 0.85rem !important;
+    border-left: 3px solid #f97316;
+}
 
 /* Login Overlay */
 .login-overlay {

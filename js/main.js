@@ -286,6 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p><i class="fas fa-pills"></i> ${item.medication_name}</p>
                         <p><i class="fas fa-calendar-alt"></i> Fin: ${formatDate(item.estimated_end_date)}</p>
                         <p><i class="fas fa-phone"></i> ${item.phone}</p>
+                        ${item.latest_fail_reason ? `<p class="fail-note"><i class="fas fa-exclamation-triangle"></i> Última falla: ${item.latest_fail_reason}</p>` : ''}
                     </div>
                     <div class="card-actions">
                         <a href="${whatsappUrl}" target="_blank" class="btn-action btn-whatsapp" title="Contactar por WhatsApp">
@@ -293,6 +294,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         </a>
                         <button class="btn-action btn-renew" data-id="${item.id}" title="Marcar como Resurtido (Reiniciar contador)">
                             <i class="fas fa-check-circle"></i>
+                        </button>
+                        <button class="btn-action btn-fail" data-id="${item.id}" title="Registrar Venta Perdida / Motivo">
+                            <i class="fas fa-times-circle"></i>
                         </button>
                         <button class="btn-action btn-edit" data-id="${item.id}" title="Editar paciente">
                             <i class="fas fa-edit"></i>
@@ -318,6 +322,14 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', (e) => {
                 const id = e.currentTarget.getAttribute('data-id');
                 renewTreatment(id);
+            });
+        });
+
+        // Añadir eventos a los botones de venta fallida
+        document.querySelectorAll('.btn-fail').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.currentTarget.getAttribute('data-id');
+                recordFailedSale(id);
             });
         });
 
@@ -368,6 +380,41 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error(error);
                 showToast('Error al renovar el registro', 'error');
+            }
+        }
+    }
+
+    async function recordFailedSale(id) {
+        const item = currentAgendaData.find(i => i.id === id);
+        if (!item) return;
+
+        const reason = prompt(`¿Por qué no se concretó la venta para ${item.full_name}?\nEj: Precio alto, Sin stock, Ya compró, Suspendió tratamiento.`);
+        
+        if (reason && reason.trim() !== "") {
+            const today = getTodayDate();
+            const startDate = today.toISOString().split('T')[0];
+            const recurrenceDays = item.recurrence || 30;
+            
+            const endDate = new Date(today);
+            endDate.setDate(today.getDate() + recurrenceDays);
+            
+            const contactDate = new Date(endDate);
+            contactDate.setDate(endDate.getDate() - 3);
+
+            try {
+                await updateDoc(doc(db, "treatments", id), {
+                    start_date: startDate, // Reiniciamos para que no sature la agenda este mes
+                    estimated_end_date: endDate.toISOString().split('T')[0],
+                    next_contact_date: contactDate.toISOString().split('T')[0],
+                    latest_fail_reason: reason.trim(),
+                    latest_fail_date: startDate,
+                    last_action: 'venta_fallida'
+                });
+                showToast('Motivo registrado. El recordatorio se movió al siguiente ciclo.', 'success');
+                loadAgenda();
+            } catch (error) {
+                console.error(error);
+                showToast('Error al registrar el motivo', 'error');
             }
         }
     }
