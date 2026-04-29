@@ -288,8 +288,11 @@ body {
 .btn-whatsapp { background: #25d366; color: white; }
 .btn-whatsapp:hover { background: #128c7e; }
 
-.btn-edit { background: #f1f5f9; color: var(--text-main); }
+.btn-edit { background: #f1f5f9; color: var(--text-main); flex: 0 0 45px; }
 .btn-edit:hover { background: #e2e8f0; }
+
+.btn-delete { background: #fee2e2; color: #ef4444; flex: 0 0 45px; }
+.btn-delete:hover { background: #fecaca; }
 
 /* Login Overlay */
 .login-overlay {

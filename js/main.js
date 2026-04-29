@@ -261,8 +261,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         <a href="${whatsappUrl}" target="_blank" class="btn-action btn-whatsapp">
                             <i class="fab fa-whatsapp"></i> WhatsApp
                         </a>
-                        <button class="btn-action btn-edit" data-id="${item.id}">
-                            <i class="fas fa-edit"></i> Editar
+                        <button class="btn-action btn-edit" data-id="${item.id}" title="Editar paciente">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-action btn-delete" data-id="${item.id}" title="Eliminar paciente">
+                            <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
                 </div>
@@ -274,6 +277,25 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', (e) => {
                 const id = e.currentTarget.getAttribute('data-id');
                 openEditMode(id);
+            });
+        });
+
+        // Añadir eventos a los botones de eliminar
+        document.querySelectorAll('.btn-delete').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const id = e.currentTarget.getAttribute('data-id');
+                const patientName = currentAgendaData.find(p => p.id === id)?.full_name || 'este paciente';
+                
+                if (confirm(`¿Estás seguro de que deseas eliminar permanentemente a ${patientName}?`)) {
+                    try {
+                        await deleteDoc(doc(db, "treatments", id));
+                        showToast('Registro eliminado correctamente', 'success');
+                        loadAgenda();
+                    } catch (error) {
+                        console.error("Error deleting document:", error);
+                        showToast('Error al eliminar el registro', 'error');
+                    }
+                }
             });
         });
     }
