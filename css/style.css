@@ -366,20 +366,22 @@ body {
 .b-info span { font-size: 0.8rem; opacity: 0.9; }
 
 .btn-bday-wa {
-    background: white;
-    color: #6366f1;
-    width: 35px;
-    height: 35px;
-    border-radius: 10px;
+    background: #25d366;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
     text-decoration: none;
     transition: 0.3s;
+    font-weight: 600;
+    font-size: 0.9rem;
 }
 
-.birthday-card.is-today .btn-bday-wa { color: #ef4444; }
-.btn-bday-wa:hover { transform: scale(1.1); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.birthday-card.is-today .btn-bday-wa { color: white; background: #25d366; }
+.btn-bday-wa:hover { background: #128c7e; transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 
 @keyframes bounceIn {
     0% { opacity: 0; transform: scale(0.3); }
