@@ -288,9 +288,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p><i class="fas fa-phone"></i> ${item.phone}</p>
                     </div>
                     <div class="card-actions">
-                        <a href="${whatsappUrl}" target="_blank" class="btn-action btn-whatsapp">
+                        <a href="${whatsappUrl}" target="_blank" class="btn-action btn-whatsapp" title="Contactar por WhatsApp">
                             <i class="fab fa-whatsapp"></i> WhatsApp
                         </a>
+                        <button class="btn-action btn-renew" data-id="${item.id}" title="Marcar como Resurtido (Reiniciar contador)">
+                            <i class="fas fa-check-circle"></i>
+                        </button>
                         <button class="btn-action btn-edit" data-id="${item.id}" title="Editar paciente">
                             <i class="fas fa-edit"></i>
                         </button>
@@ -307,6 +310,14 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', (e) => {
                 const id = e.currentTarget.getAttribute('data-id');
                 openEditMode(id);
+            });
+        });
+
+        // Añadir eventos a los botones de renovar (resurtido)
+        document.querySelectorAll('.btn-renew').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.currentTarget.getAttribute('data-id');
+                renewTreatment(id);
             });
         });
 
@@ -328,6 +339,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         });
+    }
+
+    async function renewTreatment(id) {
+        const item = currentAgendaData.find(i => i.id === id);
+        if (!item) return;
+
+        if (confirm(`¿Confirmas que ${item.full_name} ya compró su medicamento? El contador se reiniciará desde hoy.`)) {
+            const today = getTodayDate();
+            const startDate = today.toISOString().split('T')[0];
+            const recurrenceDays = item.recurrence || 30;
+            
+            const endDate = new Date(today);
+            endDate.setDate(today.getDate() + recurrenceDays);
+            
+            const contactDate = new Date(endDate);
+            contactDate.setDate(endDate.getDate() - 3);
+
+            try {
+                await updateDoc(doc(db, "treatments", id), {
+                    start_date: startDate,
+                    estimated_end_date: endDate.toISOString().split('T')[0],
+                    next_contact_date: contactDate.toISOString().split('T')[0],
+                    last_renewed_at: serverTimestamp()
+                });
+                showToast('¡Contador reiniciado con éxito!', 'success');
+                loadAgenda();
+            } catch (error) {
+                console.error(error);
+                showToast('Error al renovar el registro', 'error');
+            }
+        }
     }
 
     function openEditMode(id) {
