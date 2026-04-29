@@ -116,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
         appContainer.style.display = 'flex';
         if (sessionStorage.getItem('role') === 'admin') {
             navDevtools.style.display = 'flex';
+            document.getElementById('btn-export-csv').style.display = 'block';
         }
         loadAgenda(); // Cargar agenda al entrar
     }
@@ -682,6 +683,52 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error(error);
             usersList.innerHTML = '<p class="error-msg">Error al cargar lista de usuarios.</p>';
         }
+    }
+
+    // --- Generación de Reportes ---
+    const btnExportCsv = document.getElementById('btn-export-csv');
+    if (btnExportCsv) {
+        btnExportCsv.addEventListener('click', () => {
+            if (currentAgendaData.length === 0) {
+                showToast('No hay datos para exportar', 'error');
+                return;
+            }
+
+            const headers = ["Paciente", "Telefono", "Medicamento", "Estado", "Motivo No Surtido", "Fecha Ultima Accion"];
+            const csvRows = [headers.join(",")];
+
+            currentAgendaData.forEach(item => {
+                let status = "Pendiente";
+                if (item.last_action === 'venta_fallida') {
+                    status = "No Surtido";
+                } else if (item.last_renewed_at) {
+                    status = "Surtido";
+                }
+
+                const row = [
+                    `"${item.full_name}"`,
+                    `"${item.phone}"`,
+                    `"${item.medication_name}"`,
+                    `"${status}"`,
+                    `"${item.latest_fail_reason || ''}"`,
+                    `"${item.start_date}"` // Usamos start_date como referencia de la última vez que se activó el contador
+                ];
+                csvRows.push(row.join(","));
+            });
+
+            const csvString = csvRows.join("\n");
+            const blob = new Blob(["\ufeff" + csvString], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Reporte_FarmaAgenda_${getTodayISO()}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast('Reporte generado con éxito', 'success');
+        });
     }
 
     // Se eliminó la carga inicial para que solo cargue tras el login.

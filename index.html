@@ -90,9 +90,14 @@
 
             <!-- Agenda View -->
             <section id="tab-agenda" class="tab-content active">
-                <div class="content-header">
-                    <h1>Agenda de Resurtidos</h1>
-                    <p>Pacientes que requieren contacto para renovación de tratamiento.</p>
+                <div class="content-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <h1>Agenda de Resurtidos</h1>
+                        <p>Pacientes que requieren contacto para renovación de tratamiento.</p>
+                    </div>
+                    <button id="btn-export-csv" class="btn-submit" style="width: auto; margin-top: 0; padding: 10px 20px; display: none;">
+                        <i class="fas fa-file-csv"></i> Exportar Reporte CSV
+                    </button>
                 </div>
 
                 <div class="stats-grid">
