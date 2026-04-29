@@ -297,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <i class="fas fa-check-circle"></i> Resurtido
                             </button>
                             <button class="btn-action btn-fail" data-id="${item.id}" title="Registrar Venta Perdida / Motivo">
-                                <i class="fas fa-times-circle"></i> Incidencia
+                                <i class="fas fa-times-circle"></i> No surtido
                             </button>
                         </div>
                         <div class="action-row secondary">
