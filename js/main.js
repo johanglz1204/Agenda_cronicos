@@ -41,7 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let editModeId = null;
     let simulatedDate = null; 
     let whatsappTemplates = { ...defaultTemplates };
-    let agendaUnsubscribe = null; // Para limpiar el listener en tiempo real
+    let agendaUnsubscribe = null; 
+    let salesChartInstance = null; // Instancia para gráfico de ventas
+    let reasonsChartInstance = null; // Instancia para gráfico de motivos
 
     // --- Helper para Fechas (Soporta simulación) ---
     function getTodayDate() {
@@ -126,7 +128,9 @@ document.addEventListener('DOMContentLoaded', () => {
             navDevtools.style.display = 'flex';
             document.getElementById('btn-export-csv').style.display = 'block';
             document.getElementById('stat-monthly-sales').style.display = 'flex';
-            loadTemplates(); // Solo admin puede cargar/ver plantillas
+            const adminDash = document.getElementById('admin-dashboard');
+            if (adminDash) adminDash.style.display = 'block';
+            loadTemplates(); 
         }
         loadAgenda(); 
     }
@@ -269,9 +273,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     agendaBadge.style.display = 'none';
                 }
 
-                // Estadísticas para Admin (Eficacia)
+                // Estadísticas para Admin (Eficacia y Dashboard)
                 if (role === 'admin') {
                     updateAdminStats(currentAgendaData);
+                    updateAdminDashboard(currentAgendaData);
                 }
             }, (error) => {
                 console.error("Error en Snapshot:", error);
@@ -290,7 +295,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const thisMonthActions = data.filter(item => {
             if (!item.last_action) return false;
-            // Si no tiene last_renewed_at o fail_date, usamos el start_date como referencia aproximada
             const actionDate = item.last_renewed_at ? (item.last_renewed_at.toDate ? item.last_renewed_at.toDate() : new Date(item.last_renewed_at)) : new Date(item.start_date);
             return actionDate >= startOfMonth;
         });
@@ -300,6 +304,121 @@ document.addEventListener('DOMContentLoaded', () => {
         const efficacy = total > 0 ? Math.round((sales / total) * 100) : 0;
         
         document.getElementById('monthly-sales-count').innerText = `${sales} / ${efficacy}%`;
+    }
+
+    function updateAdminDashboard(data) {
+        const now = getTodayDate();
+        const fifteenDaysAgo = new Date(now);
+        fifteenDaysAgo.setDate(now.getDate() - 15);
+
+        // 1. Procesar Datos para Gráfico de Tendencia (Ventas de los últimos 15 días)
+        const salesByDate = {};
+        // Inicializar los últimos 15 días con 0
+        for (let i = 0; i <= 15; i++) {
+            const d = new Date(fifteenDaysAgo);
+            d.setDate(fifteenDaysAgo.getDate() + i);
+            salesByDate[d.toISOString().split('T')[0]] = 0;
+        }
+
+        // 2. Procesar Motivos de Falla y Ranking de Vendedores
+        const failReasons = {};
+        const sellerSales = {};
+
+        data.forEach(item => {
+            const history = item.history || [];
+            history.forEach(event => {
+                const eventDate = event.date; // Viene formateado como "30 abr"
+                // Para el gráfico de tendencia necesitamos la fecha real o aproximada.
+                // Usaremos el start_date del item si la acción fue reciente.
+                if (event.action === 'surtido') {
+                    const dateKey = item.last_renewed_at ? 
+                        (item.last_renewed_at.toDate ? item.last_renewed_at.toDate().toISOString().split('T')[0] : new Date(item.last_renewed_at).toISOString().split('T')[0]) 
+                        : item.start_date;
+                    
+                    if (salesByDate[dateKey] !== undefined) {
+                        salesByDate[dateKey]++;
+                    }
+
+                    // Ranking de Vendedores
+                    const seller = event.user || 'Desconocido';
+                    sellerSales[seller] = (sellerSales[seller] || 0) + 1;
+                }
+
+                if (event.action === 'no_surtido' || event.action === 'venta_fallida') {
+                    const reason = event.note || 'Sin motivo';
+                    failReasons[reason] = (failReasons[reason] || 0) + 1;
+                }
+            });
+        });
+
+        // --- RENDERIZAR GRÁFICO DE TENDENCIA ---
+        const labels = Object.keys(salesByDate).map(d => {
+            const date = new Date(d + "T12:00:00");
+            return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+        });
+        const values = Object.values(salesByDate);
+
+        if (salesChartInstance) salesChartInstance.destroy();
+        const ctxSales = document.getElementById('salesTrendChart').getContext('2d');
+        salesChartInstance = new Chart(ctxSales, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Ventas Diarias',
+                    data: values,
+                    borderColor: '#4361ee',
+                    backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            }
+        });
+
+        // --- RENDERIZAR GRÁFICO DE MOTIVOS ---
+        const reasonLabels = Object.keys(failReasons);
+        const reasonValues = Object.values(failReasons);
+
+        if (reasonsChartInstance) reasonsChartInstance.destroy();
+        const ctxReasons = document.getElementById('failReasonsChart').getContext('2d');
+        reasonsChartInstance = new Chart(ctxReasons, {
+            type: 'doughnut',
+            data: {
+                labels: reasonLabels,
+                datasets: [{
+                    data: reasonValues,
+                    backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981', '#8b5cf6']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+            }
+        });
+
+        // --- RENDERIZAR RANKING DE VENDEDORES ---
+        const rankingEl = document.getElementById('seller-ranking');
+        const sortedSellers = Object.entries(sellerSales)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5);
+
+        if (sortedSellers.length === 0) {
+            rankingEl.innerHTML = '<p class="loading-text">No hay ventas registradas este periodo.</p>';
+        } else {
+            rankingEl.innerHTML = sortedSellers.map(([name, count]) => `
+                <div class="ranking-item">
+                    <span class="seller-name">${name}</span>
+                    <span class="sales-count">${count} ventas</span>
+                </div>
+            `).join('');
+        }
     }
 
     function renderAgenda(items, todayISO) {
