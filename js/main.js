@@ -603,20 +603,19 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.form-container h2').innerText = 'Registrar Nuevo Medicamento';
         document.querySelector('.btn-submit').innerHTML = '<i class="fas fa-save"></i> Guardar Medicamento';
 
-        // Pre-llenar datos
-        document.getElementById('patient-name').value = name;
-        document.getElementById('patient-phone').value = phone;
+        // Pre-llenar datos usando los IDs correctos del HTML
+        document.getElementById('full_name').value = name;
+        document.getElementById('phone').value = phone;
 
-        // Cambiar a la pestaña de registro
-        navLinks.forEach(link => link.classList.remove('active'));
-        document.querySelector('[data-tab="patients"]').classList.add('active');
-        tabContents.forEach(tab => tab.classList.remove('active'));
-        document.getElementById('tab-patients').classList.add('active');
+        // Cambiar a la pestaña de registro (simulando click para que se disparen otros efectos si los hay)
+        const tabBtn = document.querySelector('[data-tab="patients"]');
+        if (tabBtn) tabBtn.click();
 
         // Enfocar el campo de medicamento
         setTimeout(() => {
-            document.getElementById('med-name').focus();
-        }, 100);
+            const medInput = document.getElementById('medication_name');
+            if (medInput) medInput.focus();
+        }, 300);
 
         showToast(`Agregando medicina extra para ${name}`, 'info');
     }
