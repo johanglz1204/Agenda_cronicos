@@ -1,5 +1,10 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, where, orderBy, serverTimestamp, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, deleteDoc, query, where, serverTimestamp, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+// --- Inicializar Dark Mode ---
+if (localStorage.getItem('theme') === 'dark') {
+    document.body.classList.add('dark-theme');
+}
 
 // --- CONFIGURACIÓN DE FIREBASE ---
 // TODO: Reemplaza esto con tus propias llaves de Firebase Console
@@ -145,7 +150,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Navigation ---
+    // --- Dark Mode Toggle ---
+    const btnThemeToggle = document.getElementById('btn-theme-toggle');
+    if (btnThemeToggle) {
+        btnThemeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-theme');
+            if (document.body.classList.contains('dark-theme')) {
+                localStorage.setItem('theme', 'dark');
+            } else {
+                localStorage.setItem('theme', 'light');
+            }
+        });
+    }
+
+    // --- Navegación ---
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
@@ -175,11 +193,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Buscador y Filtros ---
-    searchInput.addEventListener('input', (e) => {
-        const term = e.target.value.toLowerCase();
-        applyFilters(term);
-    });
-
     const statPending = document.getElementById('stat-pending');
     const statTotal = document.getElementById('stat-total');
 
@@ -202,20 +215,41 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('Mostrando todos los pacientes', 'info');
     });
 
-    function applyFilters(term = '') {
-        const filtered = currentAgendaData.filter(item => 
-            item.full_name.toLowerCase().includes(term) || 
-            item.medication_name.toLowerCase().includes(term) ||
-            item.phone.includes(term)
-        );
-        
-        const todayISO = getTodayISO();
-        renderAgenda(filtered, todayISO);
-        pendingCount.innerText = filtered.filter(i => calculateDaysDiff(i.estimated_end_date) <= 3).length;
+     // --- Búsqueda y Filtros ---
+    const searchInput = document.getElementById('search-input');
+    const filterSelect = document.getElementById('filter-select');
+
+    function applyFiltersAndRender() {
+        if (!searchInput || !filterSelect) return;
+        const searchTerm = searchInput.value.toLowerCase();
+        const filterVal = filterSelect.value;
+        const currentUser = sessionStorage.getItem('username');
+
+        const filtered = currentAgendaData.filter(item => {
+            const matchesSearch = item.full_name.toLowerCase().includes(searchTerm) || 
+                                  item.medication_name.toLowerCase().includes(searchTerm) ||
+                                  item.phone.includes(searchTerm);
+            
+            let matchesFilter = true;
+            if (filterVal === 'mine') {
+                matchesFilter = (item.last_handled_by === currentUser || item.created_by === currentUser);
+            } else if (filterVal === 'failed') {
+                matchesFilter = (item.last_action === 'venta_fallida' || item.last_action === 'no_surtido');
+            }
+
+            return matchesSearch && matchesFilter;
+        });
+        renderAgenda(filtered, getTodayISO());
     }
 
-    // --- Database Logic (Firebase) ---
+    if (searchInput) {
+        searchInput.addEventListener('input', applyFiltersAndRender);
+    }
+    if (filterSelect) {
+        filterSelect.addEventListener('change', applyFiltersAndRender);
+    }
 
+    // --- Carga en Tiempo Real (onSnapshot) ---
     async function loadAgenda() {
         if (!agendaCards) return;
         
@@ -255,7 +289,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     return dateA.localeCompare(dateB);
                 });
 
-                renderAgenda(currentAgendaData, todayISO);
+                // Renderizar inicialmente
+                applyFiltersAndRender();
                 checkBirthdays(currentAgendaData); 
                 
                 const urgentCount = currentAgendaData.filter(i => calculateDaysDiff(i.estimated_end_date) <= 3).length;
@@ -489,6 +524,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button class="btn-t-action btn-history" data-id="${t.id}" title="Ver historial">
                                 <i class="fas fa-history"></i>
                             </button>
+                            <button class="btn-t-action btn-note" data-id="${t.id}" title="Añadir Nota">
+                                <i class="fas fa-sticky-note"></i>
+                            </button>
                             <button class="btn-t-action btn-edit" data-id="${t.id}" title="Editar">
                                 <i class="fas fa-edit"></i>
                             </button>
@@ -580,6 +618,14 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', (e) => {
                 const id = e.currentTarget.getAttribute('data-id');
                 showPatientHistory(id);
+            });
+        });
+
+        // Notas
+        document.querySelectorAll('.btn-note').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.currentTarget.getAttribute('data-id');
+                showNoteModal(id);
             });
         });
 
@@ -986,11 +1032,24 @@ document.addEventListener('DOMContentLoaded', () => {
             
             timelineContainer.innerHTML = sortedHistory.map(event => {
                 const isFail = event.action === 'no_surtido' || event.action === 'venta_fallida';
+                const isNote = event.action === 'nota';
+                let iconText = '';
+                let extraClass = '';
+                
+                if (isNote) {
+                    iconText = '📝 Nota Adicional';
+                    extraClass = 'note';
+                } else if (isFail) {
+                    iconText = '❌ Venta no Concretada';
+                } else {
+                    iconText = '✅ Surtido Completado';
+                }
+
                 return `
-                    <div class="timeline-item ${isFail ? 'fail' : ''}">
+                    <div class="timeline-item ${isFail ? 'fail' : ''} ${extraClass}">
                         <span class="timeline-date">${event.date}</span>
                         <div class="timeline-content">
-                            <strong>${event.action === 'surtido' ? '✅ Surtido Completado' : '❌ Venta no Concretada'}</strong>
+                            <strong>${iconText}</strong>
                             <p>${event.note || 'Sin observaciones'}</p>
                             <span class="user-tag"><i class="fas fa-user"></i> ${event.user || 'Desconocido'}</span>
                         </div>
@@ -1000,6 +1059,56 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         historyModal.style.display = 'flex';
+    }
+
+    // --- Modal de Notas CRM ---
+    const noteModal = document.getElementById('note-modal');
+    const closeNote = document.getElementById('close-note');
+    const btnSaveNote = document.getElementById('btn-save-note');
+    const noteText = document.getElementById('note-text');
+    let currentNoteId = null;
+
+    if (closeNote) {
+        closeNote.addEventListener('click', () => { noteModal.style.display = 'none'; });
+        window.addEventListener('click', (e) => {
+            if (e.target === noteModal) noteModal.style.display = 'none';
+        });
+    }
+
+    function showNoteModal(id) {
+        currentNoteId = id;
+        noteText.value = '';
+        noteModal.style.display = 'flex';
+    }
+
+    if (btnSaveNote) {
+        btnSaveNote.addEventListener('click', async () => {
+            const text = noteText.value.trim();
+            if (!text || !currentNoteId) return;
+
+            const item = currentAgendaData.find(i => i.id === currentNoteId);
+            if (!item) return;
+
+            const newHistoryEvent = {
+                action: 'nota',
+                date: formatDate(getTodayISO()),
+                note: text,
+                user: sessionStorage.getItem('username')
+            };
+
+            const updatedHistory = item.history ? [...item.history, newHistoryEvent] : [newHistoryEvent];
+
+            try {
+                await updateDoc(doc(db, "treatments", currentNoteId), {
+                    history: updatedHistory
+                });
+                showToast('Nota añadida correctamente', 'success');
+                noteModal.style.display = 'none';
+            } catch (error) {
+                console.error(error);
+                showToast('Error al añadir nota', 'error');
+            }
+        });
     }
 
     async function archiveTreatment(id) {
@@ -1161,6 +1270,93 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.removeChild(link);
             
             showToast('Reporte generado con éxito', 'success');
+        });
+    }
+
+    // --- Importación CSV ---
+    const btnImportCsv = document.getElementById('btn-import-csv');
+    const csvImportFile = document.getElementById('csv-import-file');
+
+    if (btnImportCsv && csvImportFile) {
+        btnImportCsv.addEventListener('click', () => {
+            csvImportFile.click();
+        });
+
+        csvImportFile.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const text = event.target.result;
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                if (lines.length <= 1) {
+                    showToast('El archivo está vacío o solo tiene cabeceras.', 'error');
+                    return;
+                }
+
+                // Esperamos Formato: Nombre,Telefono,Medicamento,Recurrencia,FechaInicio(YYYY-MM-DD)
+                let successCount = 0;
+                let errorCount = 0;
+
+                // Usamos writeBatch para subidas múltiples eficientes
+                const batch = writeBatch(db);
+                
+                for (let i = 1; i < lines.length; i++) { // Skip header
+                    const cols = lines[i].split(',');
+                    if (cols.length >= 5) {
+                        const fullName = cols[0].replace(/"/g, '').trim();
+                        const phone = cols[1].replace(/"/g, '').trim();
+                        const medName = cols[2].replace(/"/g, '').trim();
+                        const recurrence = parseInt(cols[3].replace(/"/g, '').trim()) || 30;
+                        const startDate = cols[4].replace(/"/g, '').trim();
+
+                        if (fullName && phone && medName && startDate) {
+                            const start = new Date(startDate + "T12:00:00");
+                            const endDate = new Date(start);
+                            endDate.setDate(start.getDate() + recurrence);
+                            
+                            const contactDate = new Date(endDate);
+                            contactDate.setDate(endDate.getDate() - 3);
+
+                            const newDocRef = doc(collection(db, "treatments"));
+                            batch.set(newDocRef, {
+                                full_name: fullName,
+                                phone: phone,
+                                email: "",
+                                birth_date: "",
+                                medication_name: medName,
+                                recurrence: recurrence,
+                                start_date: startDate,
+                                estimated_end_date: endDate.toISOString().split('T')[0],
+                                next_contact_date: contactDate.toISOString().split('T')[0],
+                                created_by: sessionStorage.getItem('username'),
+                                active: true,
+                                created_at: serverTimestamp()
+                            });
+                            successCount++;
+                        } else {
+                            errorCount++;
+                        }
+                    }
+                }
+
+                if (successCount > 0) {
+                    try {
+                        await batch.commit();
+                        showToast(`Importados ${successCount} registros exitosamente.`, 'success');
+                    } catch (err) {
+                        console.error("Error importando:", err);
+                        showToast('Error al importar lotes. Revisa la consola.', 'error');
+                    }
+                } else {
+                    showToast('No se encontraron registros válidos.', 'error');
+                }
+                
+                // Limpiar el input file
+                csvImportFile.value = '';
+            };
+            reader.readAsText(file);
         });
     }
 

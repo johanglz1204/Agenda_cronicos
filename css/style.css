@@ -13,6 +13,19 @@
     --glass: rgba(255, 255, 255, 0.7);
     --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --bg-card: #ffffff;
+    --border-color: #f1f5f9;
+}
+
+body.dark-theme {
+    --bg-main: #0f172a;
+    --bg-sidebar: #1e293b;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --glass: rgba(30, 41, 59, 0.8);
+    --bg-card: #1e293b;
+    --border-color: #334155;
+    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
 }
 
 * {
@@ -26,6 +39,7 @@ body {
     background-color: var(--bg-main);
     color: var(--text-main);
     overflow: hidden;
+    transition: background-color 0.3s, color 0.3s;
 }
 
 .app-container {
@@ -38,11 +52,12 @@ body {
 .sidebar {
     width: 260px;
     background-color: var(--bg-sidebar);
-    border-right: 1px solid #e2e8f0;
+    border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
     padding: 2rem 1.5rem;
     z-index: 100;
+    transition: background-color 0.3s, border-color 0.3s;
 }
 
 .sidebar-header .logo {
@@ -126,10 +141,14 @@ body {
 }
 
 .top-bar {
+    height: 80px;
+    background-color: var(--bg-sidebar);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 2.5rem;
+    padding: 0 40px;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.3s, border-color 0.3s;
 }
 
 .search-container {
@@ -201,13 +220,15 @@ body {
 }
 
 .stat-card {
-    background: white;
-    padding: 1.5rem;
+    background: var(--bg-card);
+    padding: 25px;
     border-radius: 20px;
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 20px;
     box-shadow: var(--shadow);
+    transition: transform 0.2s, background-color 0.3s;
+    border: 1px solid var(--border-color);
 }
 
 .stat-icon {
@@ -658,7 +679,7 @@ body {
     padding: 30px;
     overflow-y: auto;
     position: relative;
-    background: white; /* Color sólido */
+    background: var(--bg-card);
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
@@ -799,14 +820,15 @@ body {
 }
 
 .dashboard-card {
-    background: white;
+    background: var(--bg-card);
     padding: 20px;
     border-radius: 15px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    border: 1px solid #f1f5f9;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
     height: 350px;
     display: flex;
     flex-direction: column;
+    transition: background-color 0.3s;
 }
 
 .dashboard-card .card-header {
@@ -829,6 +851,15 @@ body {
     position: relative;
     height: 250px;
     width: 100%;
+}
+
+.unified-patient-card {
+    background: var(--bg-card);
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+    transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
 }
 
 .ranking-container {
