@@ -611,9 +611,21 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('full_name').value = name;
         document.getElementById('phone').value = phone;
 
-        // Cambiar a la pestaña de registro (simulando click para que se disparen otros efectos si los hay)
+        // Cambiar a la pestaña de registro directamente
+        const navLinksArr = document.querySelectorAll('.nav-links li');
+        const tabContentsArr = document.querySelectorAll('.tab-content');
+        
+        navLinksArr.forEach(link => link.classList.remove('active'));
         const tabBtn = document.querySelector('[data-tab="patients"]');
-        if (tabBtn) tabBtn.click();
+        if (tabBtn) tabBtn.classList.add('active');
+        
+        tabContentsArr.forEach(tab => tab.classList.remove('active'));
+        const tabPatient = document.getElementById('tab-patients');
+        if (tabPatient) tabPatient.classList.add('active');
+
+        // Ocultar buscador si aplica
+        const searchCont = document.querySelector('.search-container');
+        if (searchCont) searchCont.style.visibility = 'hidden';
 
         // Enfocar el campo de medicamento
         setTimeout(() => {
