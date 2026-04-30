@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, serverTimestamp, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, where, orderBy, serverTimestamp, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 // --- CONFIGURACIÓN DE FIREBASE ---
 // TODO: Reemplaza esto con tus propias llaves de Firebase Console
@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let editModeId = null;
     let simulatedDate = null; 
     let whatsappTemplates = { ...defaultTemplates };
+    let agendaUnsubscribe = null; // Para limpiar el listener en tiempo real
 
     // --- Helper para Fechas (Soporta simulación) ---
     function getTodayDate() {
@@ -215,82 +216,90 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadAgenda() {
         if (!agendaCards) return;
-        agendaCards.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>Conectando con la base de datos...</p></div>';
+        
+        // Si ya hay un listener activo, lo cerramos para no duplicar
+        if (agendaUnsubscribe) agendaUnsubscribe();
+
+        agendaCards.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>Conectando con la base de datos en tiempo real...</p></div>';
         
         try {
-            const todayISO = getTodayISO();
             const role = sessionStorage.getItem('role');
             const username = sessionStorage.getItem('username');
             
-            console.log("Cargando agenda para:", username, "con rol:", role);
-
             let q;
             if (role === 'admin') {
-                q = collection(db, "treatments");
+                q = query(collection(db, "treatments"), where("active", "==", true));
             } else if (username) {
-                q = query(collection(db, "treatments"), where("created_by", "==", username));
+                q = query(collection(db, "treatments"), where("created_by", "==", username), where("active", "==", true));
             } else {
-                // Si por alguna razón no hay usuario, no mostrar nada
-                renderAgenda([], todayISO);
                 return;
             }
 
-            const querySnapshot = await getDocs(q);
-            
-            currentAgendaData = [];
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                data.id = doc.id; 
-                // Consideramos activos si no tienen el campo o si es true
-                if (data.active !== false) {
+            // Iniciamos el listener en tiempo real
+            agendaUnsubscribe = onSnapshot(q, (querySnapshot) => {
+                const todayISO = getTodayISO();
+                currentAgendaData = [];
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    data.id = doc.id; 
                     currentAgendaData.push(data);
+                });
+
+                // Ordenamos por fecha de contacto
+                currentAgendaData.sort((a, b) => {
+                    const dateA = a.next_contact_date || "";
+                    const dateB = b.next_contact_date || "";
+                    return dateA.localeCompare(dateB);
+                });
+
+                renderAgenda(currentAgendaData, todayISO);
+                checkBirthdays(currentAgendaData); 
+                
+                const urgentCount = currentAgendaData.filter(i => calculateDaysDiff(i.estimated_end_date) <= 3).length;
+                pendingCount.innerText = urgentCount;
+                totalPatientsEl.innerText = currentAgendaData.length;
+
+                // Actualizar Badge de Agenda
+                const agendaBadge = document.getElementById('agenda-badge');
+                if (urgentCount > 0) {
+                    agendaBadge.innerText = urgentCount;
+                    agendaBadge.style.display = 'inline-block';
+                } else {
+                    agendaBadge.style.display = 'none';
                 }
+
+                // Estadísticas para Admin (Eficacia)
+                if (role === 'admin') {
+                    updateAdminStats(currentAgendaData);
+                }
+            }, (error) => {
+                console.error("Error en Snapshot:", error);
+                showToast('Error en la conexión en tiempo real', 'error');
             });
-
-            // Ordenamos por fecha de contacto en JavaScript (con protección por si algún campo está vacío)
-            currentAgendaData.sort((a, b) => {
-                const dateA = a.next_contact_date || "";
-                const dateB = b.next_contact_date || "";
-                return dateA.localeCompare(dateB);
-            });
-
-            renderAgenda(currentAgendaData, todayISO);
-            checkBirthdays(currentAgendaData); 
-            
-            const urgentCount = currentAgendaData.filter(i => calculateDaysDiff(i.estimated_end_date) <= 3).length;
-            pendingCount.innerText = urgentCount;
-            totalPatientsEl.innerText = currentAgendaData.length;
-
-            // Actualizar Badge de Agenda
-            const agendaBadge = document.getElementById('agenda-badge');
-            if (urgentCount > 0) {
-                agendaBadge.innerText = urgentCount;
-                agendaBadge.style.display = 'inline-block';
-            } else {
-                agendaBadge.style.display = 'none';
-            }
-
-            // Calcular Ventas del Mes (Admin)
-            if (sessionStorage.getItem('role') === 'admin') {
-                const now = getTodayDate();
-                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-                
-                const monthlySales = currentAgendaData.filter(item => {
-                    if (!item.last_renewed_at) return false;
-                    const renewedDate = item.last_renewed_at.toDate ? item.last_renewed_at.toDate() : new Date(item.last_renewed_at);
-                    return renewedDate >= startOfMonth;
-                }).length;
-                
-                document.getElementById('monthly-sales-count').innerText = monthlySales;
-            }
 
         } catch (error) {
             console.error(error);
-            showToast('Error al cargar datos. ¿Configuraste Firebase?', 'error');
-            if (agendaCards) {
-                agendaCards.innerHTML = '<p class="error-msg">Error de conexión. Asegúrate de configurar tus llaves de Firebase en js/main.js.</p>';
-            }
+            showToast('Error al configurar la agenda', 'error');
         }
+    }
+
+    function updateAdminStats(data) {
+        const now = getTodayDate();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        
+        const thisMonthActions = data.filter(item => {
+            if (!item.last_action) return false;
+            // Si no tiene last_renewed_at o fail_date, usamos el start_date como referencia aproximada
+            const actionDate = item.last_renewed_at ? (item.last_renewed_at.toDate ? item.last_renewed_at.toDate() : new Date(item.last_renewed_at)) : new Date(item.start_date);
+            return actionDate >= startOfMonth;
+        });
+
+        const sales = thisMonthActions.filter(i => i.last_action === 'surtido').length;
+        const total = thisMonthActions.length;
+        const efficacy = total > 0 ? Math.round((sales / total) * 100) : 0;
+        
+        document.getElementById('monthly-sales-count').innerText = `${sales} / ${efficacy}%`;
     }
 
     function renderAgenda(items, todayISO) {
@@ -360,8 +369,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button class="btn-t-action btn-fail" data-id="${t.id}" title="No compró este">
                                 <i class="fas fa-times"></i>
                             </button>
+                            <button class="btn-t-action btn-history" data-id="${t.id}" title="Ver historial">
+                                <i class="fas fa-history"></i>
+                            </button>
                             <button class="btn-t-action btn-edit" data-id="${t.id}" title="Editar">
                                 <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-t-action btn-archive" data-id="${t.id}" title="Archivar/Eliminar de Agenda">
+                                <i class="fas fa-archive"></i>
                             </button>
                         </div>
                     </div>
@@ -440,6 +455,22 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', (e) => {
                 const id = e.currentTarget.getAttribute('data-id');
                 openEditMode(id);
+            });
+        });
+
+        // Historial
+        document.querySelectorAll('.btn-history').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.currentTarget.getAttribute('data-id');
+                showPatientHistory(id);
+            });
+        });
+
+        // Archivar
+        document.querySelectorAll('.btn-archive').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.currentTarget.getAttribute('data-id');
+                archiveTreatment(id);
             });
         });
 
@@ -801,6 +832,75 @@ document.addEventListener('DOMContentLoaded', () => {
             }).join('');
         } else {
             birthdaysList.innerHTML = '<div class="loading-state"><i class="fas fa-gift" style="color: var(--primary); opacity: 0.5;"></i><p>No hay cumpleaños en los próximos 7 días.</p></div>';
+        }
+    }
+
+    // --- Lógica de Historial y Archivo ---
+    const historyModal = document.getElementById('history-modal');
+    const closeHistory = document.getElementById('close-history');
+    const timelineContainer = document.getElementById('timeline-container');
+    const histPatientName = document.getElementById('hist-patient-name');
+    const histMedName = document.getElementById('hist-med-name');
+
+    if (closeHistory) {
+        closeHistory.addEventListener('click', () => {
+            historyModal.style.display = 'none';
+        });
+        
+        window.addEventListener('click', (e) => {
+            if (e.target === historyModal) historyModal.style.display = 'none';
+        });
+    }
+
+    function showPatientHistory(id) {
+        const item = currentAgendaData.find(i => i.id === id);
+        if (!item) return;
+
+        histPatientName.innerText = item.full_name;
+        histMedName.innerText = item.medication_name;
+        
+        const history = item.history || [];
+        
+        if (history.length === 0) {
+            timelineContainer.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px;">No hay registros previos para este tratamiento.</p>';
+        } else {
+            // Mostrar últimos 10 eventos, del más reciente al más antiguo
+            const sortedHistory = [...history].reverse().slice(0, 10);
+            
+            timelineContainer.innerHTML = sortedHistory.map(event => {
+                const isFail = event.action === 'no_surtido' || event.action === 'venta_fallida';
+                return `
+                    <div class="timeline-item ${isFail ? 'fail' : ''}">
+                        <span class="timeline-date">${event.date}</span>
+                        <div class="timeline-content">
+                            <strong>${event.action === 'surtido' ? '✅ Surtido Completado' : '❌ Venta no Concretada'}</strong>
+                            <p>${event.note || 'Sin observaciones'}</p>
+                            <span class="user-tag"><i class="fas fa-user"></i> ${event.user || 'Desconocido'}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        historyModal.style.display = 'flex';
+    }
+
+    async function archiveTreatment(id) {
+        const item = currentAgendaData.find(i => i.id === id);
+        if (!item) return;
+
+        if (confirm(`¿Estás seguro que deseas archivar el tratamiento de "${item.medication_name}" para ${item.full_name}? Ya no aparecerá en la agenda.`)) {
+            try {
+                await updateDoc(doc(db, "treatments", id), {
+                    active: false,
+                    archived_at: serverTimestamp(),
+                    archived_by: sessionStorage.getItem('username')
+                });
+                showToast('Tratamiento archivado con éxito', 'success');
+            } catch (error) {
+                console.error(error);
+                showToast('Error al archivar el tratamiento', 'error');
+            }
         }
     }
 

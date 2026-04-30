@@ -634,3 +634,139 @@ body {
     .form-grid { grid-template-columns: 1fr; }
     .main-content { padding: 1.5rem; }
 }
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    border-radius: 20px;
+    padding: 30px;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.modal-header h2 {
+    color: var(--primary);
+    font-size: 1.5rem;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.btn-close:hover {
+    color: var(--danger);
+}
+
+.patient-info-brief {
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.patient-info-brief h3 {
+    font-size: 1.3rem;
+    color: var(--secondary);
+}
+
+/* Timeline Styles */
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 5px;
+    bottom: 5px;
+    width: 2px;
+    background: #e2e8f0;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 25px;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -34px;
+    top: 5px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: 3px solid white;
+    box-shadow: 0 0 0 2px var(--primary);
+}
+
+.timeline-item.fail::before {
+    background: var(--danger);
+    box-shadow: 0 0 0 2px var(--danger);
+}
+
+.timeline-date {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+    display: block;
+}
+
+.timeline-content {
+    background: #f8fafc;
+    padding: 12px 15px;
+    border-radius: 12px;
+}
+
+.timeline-content strong {
+    display: block;
+    font-size: 0.95rem;
+    margin-bottom: 3px;
+}
+
+.timeline-content p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.timeline-content .user-tag {
+    font-size: 0.75rem;
+    background: #edf2f7;
+    padding: 2px 8px;
+    border-radius: 5px;
+    margin-top: 5px;
+    display: inline-block;
+}
+
