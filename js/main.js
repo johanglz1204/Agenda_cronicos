@@ -375,7 +375,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="patient-name" style="font-size: 1.4rem;">${group.full_name}</span>
                             <span class="patient-phone"><i class="fas fa-phone"></i> Llamar al: <strong>${group.phone}</strong></span>
                         </div>
-                        <span class="status-badge ${statusClass}" style="padding: 8px 15px; font-size: 0.9rem;">${statusText}</span>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
+                            <span class="status-badge ${statusClass}" style="padding: 8px 15px; font-size: 0.9rem;">${statusText}</span>
+                            <button class="btn-add-med-shortcut" data-name="${group.full_name}" data-phone="${group.phone}" title="Agregar otra medicina a este paciente">
+                                <i class="fas fa-plus-circle"></i> + Medicina
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="card-body">
@@ -435,6 +440,15 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', (e) => {
                 const id = e.currentTarget.getAttribute('data-id');
                 openEditMode(id);
+            });
+        });
+
+        // Nuevo medicamento shortcut
+        document.querySelectorAll('.btn-add-med-shortcut').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const name = e.currentTarget.getAttribute('data-name');
+                const phone = e.currentTarget.getAttribute('data-phone');
+                prepareNewTreatment(name, phone);
             });
         });
 
@@ -580,6 +594,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast('Error en la actualización masiva', 'error');
             }
         }
+    }
+
+    function prepareNewTreatment(name, phone) {
+        // Limpiar formulario primero
+        registrationForm.reset();
+        editModeId = null;
+        document.querySelector('.form-container h2').innerText = 'Registrar Nuevo Medicamento';
+        document.querySelector('.btn-submit').innerHTML = '<i class="fas fa-save"></i> Guardar Medicamento';
+
+        // Pre-llenar datos
+        document.getElementById('patient-name').value = name;
+        document.getElementById('patient-phone').value = phone;
+
+        // Cambiar a la pestaña de registro
+        navLinks.forEach(link => link.classList.remove('active'));
+        document.querySelector('[data-tab="patients"]').classList.add('active');
+        tabContents.forEach(tab => tab.classList.remove('active'));
+        document.getElementById('tab-patients').classList.add('active');
+
+        // Enfocar el campo de medicamento
+        setTimeout(() => {
+            document.getElementById('med-name').focus();
+        }, 100);
+
+        showToast(`Agregando medicina extra para ${name}`, 'info');
     }
 
     function openEditMode(id) {
