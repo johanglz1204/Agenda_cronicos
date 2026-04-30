@@ -804,12 +804,16 @@ body {
     border-radius: 15px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     border: 1px solid #f1f5f9;
+    height: 350px;
+    display: flex;
+    flex-direction: column;
 }
 
 .dashboard-card .card-header {
     margin-bottom: 15px;
     border-bottom: 1px solid #f1f5f9;
     padding-bottom: 10px;
+    flex-shrink: 0;
 }
 
 .dashboard-card h3 {
@@ -818,11 +822,16 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
+    margin: 0;
 }
 
 .chart-container canvas {
     width: 100% !important;
-    height: auto !important;
+    height: 100% !important; /* Que ocupe el espacio definido por el padre */
+}
+
+.ranking-container {
+    overflow-y: auto; /* Permitir scroll interno si hay muchos vendedores */
 }
 
 .ranking-list {
