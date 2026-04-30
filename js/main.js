@@ -40,7 +40,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentDateEl = document.getElementById('current-date');
     const toast = document.getElementById('toast');
     const searchContainer = document.querySelector('.search-container');
-    const searchInput = document.querySelector('.search-container input');
 
     let currentAgendaData = [];
     let editModeId = null;
