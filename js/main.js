@@ -600,8 +600,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Limpiar formulario primero
         registrationForm.reset();
         editModeId = null;
-        document.querySelector('.form-container h2').innerText = 'Registrar Nuevo Medicamento';
-        document.querySelector('.btn-submit').innerHTML = '<i class="fas fa-save"></i> Guardar Medicamento';
+        
+        const formTitle = document.querySelector('.content-header h1');
+        if (formTitle) formTitle.innerText = 'Registrar Nuevo Medicamento';
+        
+        const submitBtn = document.querySelector('.btn-submit');
+        if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save"></i> Guardar Medicamento';
 
         // Pre-llenar datos usando los IDs correctos del HTML
         document.getElementById('full_name').value = name;
