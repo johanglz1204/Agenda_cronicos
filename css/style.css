@@ -825,13 +825,14 @@ body {
     margin: 0;
 }
 
-.chart-container canvas {
-    width: 100% !important;
-    height: 100% !important; /* Que ocupe el espacio definido por el padre */
+.chart-wrapper {
+    position: relative;
+    height: 250px;
+    width: 100%;
 }
 
 .ranking-container {
-    overflow-y: auto; /* Permitir scroll interno si hay muchos vendedores */
+    overflow-y: auto;
 }
 
 .ranking-list {

@@ -126,17 +126,21 @@
                 <!-- Admin Dashboard (Solo visible para Admin) -->
                 <div id="admin-dashboard" class="admin-dashboard" style="display: none;">
                     <div class="dashboard-grid">
-                        <div class="dashboard-card chart-container main-chart">
+                        <div class="dashboard-card main-chart">
                             <div class="card-header">
                                 <h3><i class="fas fa-chart-line"></i> Tendencia de Ventas (Últimos 15 días)</h3>
                             </div>
-                            <canvas id="salesTrendChart"></canvas>
+                            <div class="chart-wrapper">
+                                <canvas id="salesTrendChart"></canvas>
+                            </div>
                         </div>
-                        <div class="dashboard-card chart-container">
+                        <div class="dashboard-card">
                             <div class="card-header">
                                 <h3><i class="fas fa-chart-pie"></i> Motivos de No Surtido</h3>
                             </div>
-                            <canvas id="failReasonsChart"></canvas>
+                            <div class="chart-wrapper">
+                                <canvas id="failReasonsChart"></canvas>
+                            </div>
                         </div>
                         <div class="dashboard-card ranking-container">
                             <div class="card-header">
