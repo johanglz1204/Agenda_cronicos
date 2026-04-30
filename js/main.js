@@ -126,10 +126,8 @@ document.addEventListener('DOMContentLoaded', () => {
         appContainer.style.display = 'flex';
         if (sessionStorage.getItem('role') === 'admin') {
             navDevtools.style.display = 'flex';
-            document.getElementById('btn-export-csv').style.display = 'block';
-            document.getElementById('stat-monthly-sales').style.display = 'flex';
-            const adminDash = document.getElementById('admin-dashboard');
-            if (adminDash) adminDash.style.display = 'block';
+            const navStats = document.getElementById('nav-statistics');
+            if (navStats) navStats.style.display = 'flex';
             loadTemplates(); 
         }
         loadAgenda(); 

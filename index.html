@@ -60,6 +60,9 @@
                     <a href="#"><i class="fas fa-birthday-cake"></i> <span>Cumpleaños</span> <span class="badge" id="bday-badge" style="display:none;">0</span></a>
                 </li>
                 <!-- Solo visible para admin -->
+                <li data-tab="statistics" id="nav-statistics" style="display:none;">
+                    <a href="#"><i class="fas fa-chart-bar"></i> <span>Estadísticas</span></a>
+                </li>
                 <li data-tab="devtools" id="nav-devtools" style="display:none;">
                     <a href="#"><i class="fas fa-wrench"></i> <span>Modo Dev</span></a>
                 </li>
@@ -94,9 +97,6 @@
                         <h1>Agenda de Resurtidos</h1>
                         <p>Pacientes que requieren contacto para renovación de tratamiento.</p>
                     </div>
-                    <button id="btn-export-csv" class="btn-submit" style="width: auto; margin-top: 0; padding: 10px 20px; display: none;">
-                        <i class="fas fa-file-csv"></i> Exportar Reporte CSV
-                    </button>
                 </div>
 
                 <div class="stats-grid">
@@ -114,7 +114,35 @@
                             <span>Pacientes totales</span>
                         </div>
                     </div>
-                    <div class="stat-card" id="stat-monthly-sales" style="display: none;">
+                </div>
+
+                <div class="data-table-container">
+                    <div class="table-header">
+                        <h2>Próximos Contactos</h2>
+                    </div>
+                    <div id="agenda-cards" class="agenda-cards">
+                        <div class="loading-state">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Cargando pacientes desde la nube...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Statistics View (Solo Admin) -->
+            <section id="tab-statistics" class="tab-content">
+                <div class="content-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <h1>Panel de Estadísticas</h1>
+                        <p>Análisis de rendimiento y exportación de datos.</p>
+                    </div>
+                    <button id="btn-export-csv" class="btn-submit" style="width: auto; margin-top: 0; padding: 10px 20px;">
+                        <i class="fas fa-file-csv"></i> Exportar Reporte CSV
+                    </button>
+                </div>
+
+                <div class="stats-grid" style="grid-template-columns: 1fr;">
+                    <div class="stat-card" id="stat-monthly-sales">
                         <div class="stat-icon success"><i class="fas fa-hand-holding-usd"></i></div>
                         <div class="stat-info">
                             <h3 id="monthly-sales-count">0</h3>
@@ -123,8 +151,8 @@
                     </div>
                 </div>
 
-                <!-- Admin Dashboard (Solo visible para Admin) -->
-                <div id="admin-dashboard" class="admin-dashboard" style="display: none;">
+                <!-- Admin Dashboard -->
+                <div id="admin-dashboard" class="admin-dashboard">
                     <div class="dashboard-grid">
                         <div class="dashboard-card main-chart">
                             <div class="card-header">
@@ -149,18 +177,6 @@
                             <div id="seller-ranking" class="ranking-list">
                                 <p class="loading-text">Procesando datos...</p>
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="data-table-container">
-                    <div class="table-header">
-                        <h2>Próximos Contactos</h2>
-                    </div>
-                    <div id="agenda-cards" class="agenda-cards">
-                        <div class="loading-state">
-                            <i class="fas fa-spinner fa-spin"></i>
-                            <p>Cargando pacientes desde la nube...</p>
                         </div>
                     </div>
                 </div>
