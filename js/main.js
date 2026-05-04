@@ -1,5 +1,6 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, deleteDoc, query, where, serverTimestamp, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+// Firebase Compat SDK cargado via <script> en index.html
+// Los objetos firebase.* están disponibles globalmente (sin necesidad de import)
+// Esto permite que el archivo funcione con el protocolo file:// sin errores CORS
 
 // --- Inicializar Dark Mode ---
 if (localStorage.getItem('theme') === 'dark') {
@@ -24,9 +25,62 @@ const defaultTemplates = {
     birthday: "¡Hola {nombre}! 👋\nLe escribimos de *Farmacias Madero* para desearle un muy feliz cumpleaños 🎂🎁 Esperamos que pase un excelente día."
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// Initialize Firebase (Compat SDK)
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Aliases para mantener compatibilidad con el resto del código
+// collection(db, 'nombre') → db.collection('nombre')
+function collection(dbOrRef, colName) {
+    if (colName === undefined) return dbOrRef; // ya es una colRef
+    return dbOrRef.collection(colName);
+}
+
+// doc(db, 'col', 'id') → db.collection('col').doc('id')
+// doc(colRef) → colRef.doc()  (genera nuevo ID)
+// doc(colRef, 'id') → colRef.doc('id')
+function doc(dbOrColRef, colOrId, id) {
+    if (id !== undefined) {
+        // doc(db, 'collection', 'id')
+        return dbOrColRef.collection(colOrId).doc(id);
+    } else if (colOrId !== undefined) {
+        // doc(colRef, 'id') — colOrId es el id aquí
+        return dbOrColRef.doc(colOrId);
+    } else {
+        // doc(colRef) — genera nuevo doc con ID automático
+        return dbOrColRef.doc();
+    }
+}
+
+const addDoc = (colRef, data) => colRef.add(data);
+const getDocs = (q) => q.get();
+const updateDoc = (docRef, data) => docRef.update(data);
+const deleteDoc = (docRef) => docRef.delete();
+const serverTimestamp = () => firebase.firestore.FieldValue.serverTimestamp();
+const writeBatch = (db) => db.batch();
+
+function query(colRef, ...constraints) {
+    let q = colRef;
+    constraints.forEach(c => { q = c(q); });
+    return q;
+}
+function where(field, op, value) {
+    return (q) => q.where(field, op, value);
+}
+function onSnapshot(q, callback, errorCallback) {
+    return q.onSnapshot(snapshot => {
+        const querySnapshot = {
+            forEach: (fn) => snapshot.docs.forEach(d => fn(d)),
+            docs: snapshot.docs,
+            empty: snapshot.empty
+        };
+        callback(querySnapshot);
+    }, errorCallback);
+}
+function setDoc(docRef, data) {
+    return docRef.set(data);
+}
+
 
 document.addEventListener('DOMContentLoaded', () => {
     
@@ -167,12 +221,27 @@ document.addEventListener('DOMContentLoaded', () => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const tabId = link.getAttribute('data-tab');
+            if (!tabId) return; // Ignorar clicks en elementos sin data-tab (como logout)
+            
+            console.log('[NAV] Click en tab:', tabId);
+            
             navLinks.forEach(l => l.classList.remove('active'));
             link.classList.add('active');
+            
+            // Ocultar TODOS los tabs y mostrar solo el seleccionado
             tabContents.forEach(tab => {
                 tab.classList.remove('active');
-                if (tab.id === `tab-${tabId}`) tab.classList.add('active');
+                tab.style.display = 'none'; // Forzar ocultar por estilo directo
             });
+            
+            const targetTab = document.getElementById(`tab-${tabId}`);
+            if (targetTab) {
+                targetTab.classList.add('active');
+                targetTab.style.display = 'block'; // Forzar mostrar por estilo directo
+                console.log('[NAV] Tab activado:', targetTab.id, '- display:', targetTab.style.display);
+            } else {
+                console.error('[NAV] No se encontró el tab:', `tab-${tabId}`);
+            }
 
             // Ocultar buscador si no estamos en la agenda
             if (tabId === 'agenda') {
@@ -182,9 +251,19 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (tabId === 'birthdays') {
                 searchContainer.style.visibility = 'hidden';
                 checkBirthdays(currentAgendaData);
+            } else if (tabId === 'statistics') {
+                searchContainer.style.visibility = 'hidden';
+                // Re-renderizar gráficos ahora que el tab es visible
+                if (sessionStorage.getItem('role') === 'admin') {
+                    setTimeout(() => {
+                        console.log('[STATS] Renderizando dashboard con', currentAgendaData.length, 'registros');
+                        updateAdminStats(currentAgendaData);
+                        updateAdminDashboard(currentAgendaData);
+                    }, 100);
+                }
             } else if (tabId === 'devtools') {
                 searchContainer.style.visibility = 'hidden';
-                loadUsers(); // Cargar usuarios al entrar a Modo Dev
+                loadUsers();
             } else {
                 searchContainer.style.visibility = 'hidden';
             }
@@ -1191,8 +1270,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            usersList.innerHTML = querySnapshot.docs.map(doc => {
-                const data = doc.data();
+            usersList.innerHTML = querySnapshot.docs.map(userDoc => {
+                const data = userDoc.data();
                 if (data.username === 'admin') return ''; // No borrar al admin
                 return `
                     <div class="user-item">
@@ -1200,7 +1279,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span>Usuario: <strong>${data.username}</strong></span>
                             <span>Clave: <strong>${data.password}</strong></span>
                         </div>
-                        <button class="btn-delete-user" data-id="${doc.id}" title="Eliminar usuario">
+                        <button class="btn-delete-user" data-id="${userDoc.id}" title="Eliminar usuario">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
@@ -1384,8 +1463,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 // Usamos setDoc para asegurar que el ID sea fijo
-                const { setDoc } = await import("https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js");
-                await setDoc(doc(db, "settings", "whatsapp_templates"), {
+                await setDoc(db.collection("settings").doc("whatsapp_templates"), {
                     reminder,
                     birthday
                 });
