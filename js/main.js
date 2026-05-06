@@ -94,6 +94,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentDateEl = document.getElementById('current-date');
     const toast = document.getElementById('toast');
     const searchContainer = document.querySelector('.search-container');
+    
+    // WhatsApp Parser Elements
+    const btnAnalyzeWhatsapp = document.getElementById('btn-analyze-whatsapp');
+    const whatsappFileInput = document.getElementById('whatsapp-file-input');
+    const whatsappModal = document.getElementById('whatsapp-modal');
+    const closeWhatsapp = document.getElementById('close-whatsapp');
+    const whatsappResultsBody = document.getElementById('whatsapp-results-body');
+    const btnExportWaResults = document.getElementById('btn-export-wa-results');
+    
+    let lastWhatsappResults = [];
 
     let currentAgendaData = [];
     let editModeId = null;
@@ -187,6 +197,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const navStats = document.getElementById('nav-statistics');
             if (navStats) navStats.style.display = 'flex';
             loadTemplates(); 
+            // Mostrar campos exclusivos de admin
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+            loadUsers(); // Cargar usuarios para los selectores
         }
         loadAgenda(); 
     }
@@ -950,6 +963,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const contactDate = new Date(endDate);
         contactDate.setDate(endDate.getDate() - 3); // Margen de 3 días
 
+        // Si es admin y seleccionó un usuario diferente, lo usamos como dueño del registro
+        const assignTo = document.getElementById('assign_to_user').value;
+        const finalOwner = (sessionStorage.getItem('role') === 'admin' && assignTo) ? assignTo : sessionStorage.getItem('username');
+
         const treatmentData = {
             full_name: fullName,
             phone: phone,
@@ -960,7 +977,7 @@ document.addEventListener('DOMContentLoaded', () => {
             start_date: startDate,
             estimated_end_date: endDate.toISOString().split('T')[0],
             next_contact_date: contactDate.toISOString().split('T')[0],
-            created_by: sessionStorage.getItem('username'),
+            created_by: finalOwner,
             active: true
         };
 
@@ -1265,6 +1282,25 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             const querySnapshot = await getDocs(collection(db, "users"));
+            
+            // Actualizar todos los selectores de asignación
+            const assignSelectors = document.querySelectorAll('.user-assign-select');
+            const usernames = querySnapshot.docs.map(d => d.data().username).filter(u => u !== 'admin');
+            
+            assignSelectors.forEach(sel => {
+                // Limpiar excepto el primero (Mí mismo / Sistema)
+                const firstOption = sel.options[0];
+                sel.innerHTML = '';
+                sel.appendChild(firstOption);
+                
+                usernames.forEach(u => {
+                    const opt = document.createElement('option');
+                    opt.value = u;
+                    opt.textContent = u;
+                    sel.appendChild(opt);
+                });
+            });
+
             if (querySnapshot.empty) {
                 usersList.innerHTML = '<p style="color: var(--text-muted);">No hay usuarios registrados aún.</p>';
                 return;
@@ -1397,6 +1433,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             const contactDate = new Date(endDate);
                             contactDate.setDate(endDate.getDate() - 3);
 
+                            const assignedUser = document.getElementById('csv-assign-user').value || sessionStorage.getItem('username');
+
                             const newDocRef = doc(collection(db, "treatments"));
                             batch.set(newDocRef, {
                                 full_name: fullName,
@@ -1408,7 +1446,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 start_date: startDate,
                                 estimated_end_date: endDate.toISOString().split('T')[0],
                                 next_contact_date: contactDate.toISOString().split('T')[0],
-                                created_by: sessionStorage.getItem('username'),
+                                created_by: assignedUser,
                                 active: true,
                                 created_at: serverTimestamp()
                             });
@@ -1435,6 +1473,173 @@ document.addEventListener('DOMContentLoaded', () => {
                 csvImportFile.value = '';
             };
             reader.readAsText(file);
+        });
+    }
+
+    // --- Lógica de Análisis de WhatsApp (.txt) ---
+    if (btnAnalyzeWhatsapp && whatsappFileInput) {
+        btnAnalyzeWhatsapp.addEventListener('click', () => {
+            whatsappFileInput.click();
+        });
+
+        whatsappFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const text = event.target.result;
+                processWhatsappChat(text);
+                whatsappFileInput.value = ''; // Limpiar para permitir re-subir
+            };
+            reader.readAsText(file);
+        });
+    }
+
+    if (closeWhatsapp) {
+        closeWhatsapp.addEventListener('click', () => { whatsappModal.style.display = 'none'; });
+        window.addEventListener('click', (e) => { if (e.target === whatsappModal) whatsappModal.style.display = 'none'; });
+    }
+
+    function processWhatsappChat(text) {
+        const lines = text.split('\n');
+        const contacts = {};
+        
+        // Regex para detectar formatos comunes de WhatsApp:
+        // [15/04/26, 14:30] Nombre: Mensaje
+        // 15/04/26, 14:30 - Nombre: Mensaje
+        const lineRegex = /^\[?(\d{1,2}\/\d{1,2}\/\d{2,4}),?\s+(\d{1,2}:\d{2}(?::\d{2})?)\]?\s+(?:-\s+)?([^:]+):\s+(.*)$/;
+
+        // Lista de medicamentos conocidos para detección (incluye los del datalist)
+        const knownMeds = ["paracetamol", "amoxicilina", "ibuprofeno", "metformina", "loratadina", "enalapril", "losartan", "omeprazol", "metformina", "aspirina"];
+
+        lines.forEach(line => {
+            const match = line.match(lineRegex);
+            if (match) {
+                const name = match[3].trim();
+                const message = match[4].trim();
+
+                // Ignorar mensajes del sistema o de la propia farmacia (asumiendo que el usuario sabe quién es)
+                const myName = sessionStorage.getItem('username') || "Farmacia";
+                if (name.toLowerCase().includes('madero') || name.toLowerCase() === myName.toLowerCase()) return;
+
+                if (!contacts[name]) {
+                    contacts[name] = {
+                        name: name,
+                        phone: "",
+                        medication: "",
+                        lastMessage: message,
+                        messagesCount: 0
+                    };
+                }
+
+                contacts[name].messagesCount++;
+
+                // Intentar extraer teléfono del mensaje si contiene muchos números
+                const phoneMatch = message.match(/\d{10,13}/);
+                if (phoneMatch && !contacts[name].phone) {
+                    contacts[name].phone = phoneMatch[0];
+                }
+
+                // Intentar extraer medicamento
+                if (!contacts[name].medication) {
+                    const lowerMsg = message.toLowerCase();
+                    knownMeds.forEach(med => {
+                        if (lowerMsg.includes(med)) {
+                            contacts[name].medication = med.charAt(0).toUpperCase() + med.slice(1);
+                        }
+                    });
+                }
+            }
+        });
+
+        const results = Object.values(contacts).filter(c => c.messagesCount > 0);
+        lastWhatsappResults = results;
+        renderWhatsappResults(results);
+    }
+
+    function renderWhatsappResults(results) {
+        if (results.length === 0) {
+            showToast('No se detectaron contactos válidos en el archivo.', 'error');
+            return;
+        }
+
+        whatsappResultsBody.innerHTML = results.map((c, index) => `
+            <tr>
+                <td style="padding: 10px; border-bottom: 1px solid var(--border-color);">${c.name}</td>
+                <td style="padding: 10px; border-bottom: 1px solid var(--border-color);">
+                    <input type="text" value="${c.phone}" class="wa-edit-phone" data-index="${index}" placeholder="Sin teléfono" style="width: 120px; padding: 5px; border-radius: 5px; border: 1px solid #ccc;">
+                </td>
+                <td style="padding: 10px; border-bottom: 1px solid var(--border-color);">
+                    <input type="text" value="${c.medication}" class="wa-edit-med" data-index="${index}" placeholder="No detectado" style="width: 150px; padding: 5px; border-radius: 5px; border: 1px solid #ccc;">
+                </td>
+                <td style="padding: 10px; border-bottom: 1px solid var(--border-color);">
+                    <button class="btn-t-action btn-renew btn-wa-register" data-index="${index}" title="Registrar en Agenda">
+                        <i class="fas fa-user-plus"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+
+        // Eventos para el botón de registro rápido
+        document.querySelectorAll('.btn-wa-register').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = e.currentTarget.getAttribute('data-index');
+                const contact = lastWhatsappResults[idx];
+                
+                // Obtener valores actuales de los inputs por si el usuario los editó
+                const row = e.currentTarget.closest('tr');
+                const editedPhone = row.querySelector('.wa-edit-phone').value;
+                const editedMed = row.querySelector('.wa-edit-med').value;
+
+                prepareNewTreatment(contact.name, editedPhone || "");
+                
+                // Si hay un usuario seleccionado para asignar, lo ponemos en el selector del formulario
+                const waAssignTo = document.getElementById('wa-assign-user').value;
+                if (waAssignTo) {
+                    setTimeout(() => {
+                        document.getElementById('assign_to_user').value = waAssignTo;
+                    }, 600);
+                }
+
+                // Pre-llenar el medicamento también si se detectó
+                if (editedMed) {
+                    setTimeout(() => {
+                        document.getElementById('medication_name').value = editedMed;
+                    }, 500);
+                }
+                
+                whatsappModal.style.display = 'none';
+            });
+        });
+
+        whatsappModal.style.display = 'flex';
+    }
+
+    if (btnExportWaResults) {
+        btnExportWaResults.addEventListener('click', () => {
+            if (lastWhatsappResults.length === 0) return;
+
+            const headers = ["Nombre", "Telefono Detectado", "Medicamento Detectado", "Ultimo Mensaje"];
+            const csvRows = [headers.join(",")];
+
+            lastWhatsappResults.forEach(c => {
+                const row = [
+                    `"${c.name}"`,
+                    `"${c.phone}"`,
+                    `"${c.medication}"`,
+                    `"${c.lastMessage.replace(/"/g, '""')}"`
+                ];
+                csvRows.push(row.join(","));
+            });
+
+            const csvString = csvRows.join("\n");
+            const blob = new Blob(["\ufeff" + csvString], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Contactos_WhatsApp_${getTodayISO()}.csv`);
+            link.click();
         });
     }
 

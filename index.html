@@ -145,13 +145,22 @@
                         <p>Análisis de rendimiento y exportación de datos.</p>
                     </div>
                     <div style="display: flex; gap: 10px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <select id="csv-assign-user" class="user-assign-select" style="padding: 10px 15px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); outline: none; font-size: 0.95rem; cursor: pointer;">
+                                <option value="">Asignar a (Mí mismo)</option>
+                            </select>
+                        </div>
                         <input type="file" id="csv-import-file" accept=".csv" style="display: none;">
                         <button id="btn-import-csv" class="btn-submit" style="width: auto; margin-top: 0; padding: 10px 20px; background: var(--accent);">
                             <i class="fas fa-upload"></i> Importar CSV
                         </button>
+                        <button id="btn-analyze-whatsapp" class="btn-submit" style="width: auto; margin-top: 0; padding: 10px 20px; background: #25D366; border-color: #25D366;">
+                            <i class="fab fa-whatsapp"></i> Analizar Chat WhatsApp (.txt)
+                        </button>
                         <button id="btn-export-csv" class="btn-submit" style="width: auto; margin-top: 0; padding: 10px 20px;">
                             <i class="fas fa-file-csv"></i> Exportar Reporte CSV
                         </button>
+                        <input type="file" id="whatsapp-file-input" accept=".txt" style="display: none;">
                     </div>
                 </div>
 
@@ -223,6 +232,12 @@
                                 <div class="form-group">
                                     <label for="birth_date">Fecha de Nacimiento</label>
                                     <input type="date" id="birth_date">
+                                </div>
+                                <div class="form-group admin-only" style="display:none;">
+                                    <label for="assign_to_user">Asignar a Vendedor</label>
+                                    <select id="assign_to_user" class="user-assign-select">
+                                        <option value="">Mí mismo</option>
+                                    </select>
                                 </div>
                             </div>
 
@@ -376,6 +391,45 @@
                     <textarea id="note-text" rows="4" style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-family: inherit; resize: vertical;" placeholder="Ej. El paciente prefiere llamadas por la tarde..."></textarea>
                 </div>
                 <button id="btn-save-note" class="btn-submit" style="margin-top: 15px;"><i class="fas fa-save"></i> Guardar Nota</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Resultados WhatsApp -->
+    <div id="whatsapp-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h2><i class="fab fa-whatsapp"></i> Contactos Detectados en Chat</h2>
+                <button id="close-whatsapp" class="btn-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 15px; color: var(--text-muted);">Se han identificado los siguientes contactos. Puedes registrarlos individualmente o exportar la lista a CSV.</p>
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="data-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="text-align: left; background: var(--bg-main);">
+                                <th style="padding: 12px;">Nombre</th>
+                                <th style="padding: 12px;">Teléfono</th>
+                                <th style="padding: 12px;">Posible Medicamento</th>
+                                <th style="padding: 12px;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="whatsapp-results-body">
+                            <!-- Los resultados se insertarán aquí -->
+                        </tbody>
+                    </table>
+                </div>
+                <div style="margin-top: 20px; display: flex; justify-content: flex-end; align-items: center; gap: 15px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label style="font-size: 0.8rem; display: block; margin-bottom: 3px;">Asignar nuevos registros a:</label>
+                        <select id="wa-assign-user" class="user-assign-select" style="padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main);">
+                            <option value="">Mí mismo</option>
+                        </select>
+                    </div>
+                    <button id="btn-export-wa-results" class="btn-submit" style="width: auto; margin-top: 0; background: var(--secondary); padding: 10px 20px;">
+                        <i class="fas fa-file-download"></i> Exportar a CSV
+                    </button>
+                </div>
             </div>
         </div>
     </div>
