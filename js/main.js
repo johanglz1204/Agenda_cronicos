@@ -94,6 +94,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentDateEl = document.getElementById('current-date');
     const toast = document.getElementById('toast');
     const searchContainer = document.querySelector('.search-container');
+    const usersList = document.getElementById('users-list'); // Movido aquí
+    const userManagementForm = document.getElementById('user-management-form'); // Movido aquí
     
     // WhatsApp Parser Elements
     const btnAnalyzeWhatsapp = document.getElementById('btn-analyze-whatsapp');
@@ -1250,8 +1252,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Gestión de Usuarios ---
-    const userManagementForm = document.getElementById('user-management-form');
-    const usersList = document.getElementById('users-list');
+    // (Definiciones movidas al inicio de DOMContentLoaded)
 
     if (userManagementForm) {
         userManagementForm.addEventListener('submit', async (e) => {
@@ -1277,8 +1278,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadUsers() {
-        if (!usersList) return;
-        usersList.innerHTML = '<p>Cargando usuarios...</p>';
+        if (usersList) usersList.innerHTML = '<p>Cargando usuarios...</p>';
         
         try {
             const querySnapshot = await getDocs(collection(db, "users"));
@@ -1336,7 +1336,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error(error);
-            usersList.innerHTML = '<p class="error-msg">Error al cargar lista de usuarios.</p>';
+            if (usersList) usersList.innerHTML = '<p class="error-msg">Error al cargar lista de usuarios.</p>';
         }
     }
 
