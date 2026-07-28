@@ -194,12 +194,19 @@ document.addEventListener('DOMContentLoaded', () => {
     function showApp() {
         loginScreen.style.display = 'none';
         appContainer.style.display = 'flex';
-        if (sessionStorage.getItem('role') === 'admin') {
+        const userRole = sessionStorage.getItem('role');
+
+        if (userRole === 'admin') {
             navDevtools.style.display = 'flex';
+        } else {
+            navDevtools.style.display = 'none';
+        }
+
+        if (userRole === 'admin' || userRole === 'supervisor') {
             const navStats = document.getElementById('nav-statistics');
             if (navStats) navStats.style.display = 'flex';
-            loadTemplates(); 
-            // Mostrar campos exclusivos de admin
+            if (userRole === 'admin') loadTemplates(); 
+            // Mostrar campos exclusivos de admin/supervisor
             document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
             loadUsers(); // Cargar usuarios para los selectores
         }
@@ -269,7 +276,8 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (tabId === 'statistics') {
                 searchContainer.style.visibility = 'hidden';
                 // Re-renderizar gráficos ahora que el tab es visible
-                if (sessionStorage.getItem('role') === 'admin') {
+                const userRole = sessionStorage.getItem('role');
+                if (userRole === 'admin' || userRole === 'supervisor') {
                     setTimeout(() => {
                         console.log('[STATS] Renderizando dashboard con', currentAgendaData.length, 'registros');
                         updateAdminStats(currentAgendaData);
@@ -356,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const username = sessionStorage.getItem('username');
             
             let q;
-            if (role === 'admin') {
+            if (role === 'admin' || role === 'supervisor') {
                 q = query(collection(db, "treatments"), where("active", "==", true));
             } else if (username) {
                 q = query(collection(db, "treatments"), where("created_by", "==", username), where("active", "==", true));
@@ -399,8 +407,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     agendaBadge.style.display = 'none';
                 }
 
-                // Estadísticas para Admin (Eficacia y Dashboard)
-                if (role === 'admin') {
+                // Estadísticas para Admin y Supervisor (Eficacia y Dashboard)
+                if (role === 'admin' || role === 'supervisor') {
                     updateAdminStats(currentAgendaData);
                     updateAdminDashboard(currentAgendaData);
                 }
@@ -888,10 +896,10 @@ document.addEventListener('DOMContentLoaded', () => {
         registrationForm.reset();
         editModeId = null;
         
-        const formTitle = document.querySelector('.content-header h1');
+        const formTitle = document.querySelector('#tab-patients .content-header h1');
         if (formTitle) formTitle.innerText = 'Registrar Nuevo Medicamento';
         
-        const submitBtn = document.querySelector('.btn-submit');
+        const submitBtn = document.querySelector('#registration-form .btn-submit');
         if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save"></i> Guardar Medicamento';
 
         // Pre-llenar datos usando los IDs correctos del HTML
@@ -965,9 +973,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const contactDate = new Date(endDate);
         contactDate.setDate(endDate.getDate() - 3); // Margen de 3 días
 
-        // Si es admin y seleccionó un usuario diferente, lo usamos como dueño del registro
+        // Si es admin o supervisor y seleccionó un usuario diferente, lo usamos como dueño del registro
         const assignTo = document.getElementById('assign_to_user').value;
-        const finalOwner = (sessionStorage.getItem('role') === 'admin' && assignTo) ? assignTo : sessionStorage.getItem('username');
+        const currentRole = sessionStorage.getItem('role');
+        const finalOwner = ((currentRole === 'admin' || currentRole === 'supervisor') && assignTo) ? assignTo : sessionStorage.getItem('username');
 
         const treatmentData = {
             full_name: fullName,
@@ -1259,12 +1268,14 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const username = document.getElementById('new-username').value.trim();
             const password = document.getElementById('new-password').value.trim();
+            const roleEl = document.getElementById('new-role');
+            const role = roleEl ? roleEl.value : 'vendedor';
 
             try {
                 await addDoc(collection(db, "users"), {
                     username,
                     password,
-                    role: 'vendedor',
+                    role: role,
                     created_at: serverTimestamp()
                 });
                 showToast('Usuario creado con éxito', 'success');
@@ -1309,11 +1320,13 @@ document.addEventListener('DOMContentLoaded', () => {
             usersList.innerHTML = querySnapshot.docs.map(userDoc => {
                 const data = userDoc.data();
                 if (data.username === 'admin') return ''; // No borrar al admin
+                const userRole = data.role || 'vendedor';
                 return `
                     <div class="user-item">
                         <div class="user-info">
                             <span>Usuario: <strong>${data.username}</strong></span>
                             <span>Clave: <strong>${data.password}</strong></span>
+                            <span style="background: var(--bg-main); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; margin-left: 10px;">Rol: <strong>${userRole}</strong></span>
                         </div>
                         <button class="btn-delete-user" data-id="${userDoc.id}" title="Eliminar usuario">
                             <i class="fas fa-trash-alt"></i>
